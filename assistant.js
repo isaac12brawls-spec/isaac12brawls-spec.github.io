@@ -66,9 +66,20 @@
         if (!tr.length) return `Todavía estoy eligiendo a los mejores traders de ${sy}.`;
         return `Sigo a ${tr.length} traders top de ${sy}: ${tr.map((r) => `${r.name || r.label} (${r.pnl_30d >= 0 ? "+" : ""}${big(r.pnl_30d)} en ${sy})`).join(", ")}. Te aviso Comprar cuando la mayoría está dentro y uno compra; Vender cuando la mayoría vende.`;
       }
-      if (has("comprar")) return `Cuando la mayoría de los traders top de ${sy} tiene la moneda y uno compra, reviso que no sea estafa y te llega Comprar con el monto exacto (ahora $${(a.ticket || 5).toFixed(2)}). Lo tocas y FOMO se abre en ${sy}. Si no lo tocas, no pasa nada.`;
+      if (has("comprar")) return `Cuando la mayoría de los traders top de ${sy} tiene la moneda y uno compra, reviso que no sea estafa y te llega ¡Compra ya! con el monto exacto (ahora $${(a.ticket || 5).toFixed(2)}). Lo tocas y FOMO se abre en ${sy}. Si no lo tocas, no pasa nada.`;
       if (has("vender", "venta")) return `Cuando la mayoría de los traders top de ${sy} vende, te llega Vender. Lo tocas y vendes el 100% en FOMO. También te aviso si cae mucho (stop) o si sacan la liquidez.`;
-      if (has("presupuesto", "cuanto pongo", "monto")) return `Como es una sola moneda, cada Comprar usa tu saldo menos lo de la comisión: ahora $${(a.ticket || 5).toFixed(2)}. Nunca más que tu saldo.`;
+      const tk = a.ticket || 0;
+      const tks = Math.abs(tk - Math.round(tk)) < 0.005 ? "$" + Math.round(tk) : "$" + tk.toFixed(2);
+      if (has("presupuesto", "cuanto pongo", "monto")) return `Cada Comprar te pide ${tks} fijos (lo que elegiste para empezar). Nunca más que tu saldo ($${(a.stack || 0).toFixed(2)}).`;
+      if (has("comision", "fee", "cobra", "costo")) return `FOMO cobra cerca de 2% al comprar y 2% al vender. Con ${tks}, si ${sy} sube menos de ~4%, la comisión se come la ganancia.`;
+      if (has("por que", "porque", "quien compro", "compro")) {
+        const b = (a.buys || []).filter((x) => x.symbol === f.symbol);
+        if (!b.length) return `Todavía no hubo ningún Comprar de ${sy}. Te aviso con ¡Compra ya! cuando la mayoría de sus traders top esté dentro y uno compre.`;
+        const x = b[0];
+        const hh = new Date(x.ts * 1000).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+        return `${sy} a las ${hh}: ${x.why || "la mayoría de sus traders top estaba dentro"}.`;
+      }
+      if (has("notific", "aviso", "alerta")) return `Solo te llegan dos avisos al teléfono: "¡Compra ya! ${sy} · pon ${tks}" y "¡Vende ya! ${sy}". Lo tocas y FOMO se abre en ${sy}.`;
     }
     if (has("por que", "porque", "quien compro", "compro")) {
       const c = coinIn(q);
@@ -88,7 +99,7 @@
       return (g.length ? g.join(". ") + "." : tr.map((r) => r.name || r.label).join(", ")) + " Los vuelvo a elegir cada día. En la pestaña Traders ves por qué elegí a cada uno.";
     }
     if (has("presupuesto", "cuanto pongo", "monto")) return `Yo manejo tu presupuesto${a.auto ? " (modo Automático)" : ""}: reparto tu saldo en ${a.max_open || 2} compras, guardo para la comisión y uso lo que vas ganando. Ahora cada compra es de $${(a.ticket || 5).toFixed(2)}. Tú solo tocas el botón.`;
-    if (has("comprar")) return `Cuando un trader de BTC, ETH, SOL o XRP abre una compra, te llega Comprar con el monto exacto (ahora $${(a.ticket || 5).toFixed(2)}). Lo tocas y FOMO se abre con la moneda correcta. Si no lo tocas, no pasa nada. Máximo ${a.max_open || 2} monedas a la vez.`;
+    if (has("comprar")) return `Cuando un trader de BTC, ETH, SOL o XRP abre una compra, te llega ¡Compra ya! con el monto exacto (ahora $${(a.ticket || 5).toFixed(2)}). Lo tocas y FOMO se abre con la moneda correcta. Si no lo tocas, no pasa nada. Máximo ${a.max_open || 2} monedas a la vez.`;
     if (has("vender", "venta")) return "Cuando tus traders cierran esa compra (o se pasan a la baja), te llega Vender. Lo tocas y vendes el 100% en FOMO. También te aviso si la moneda cae mucho (stop).";
     if (has("parar", "pausa", "detener")) return "Parar deja de mandarte compras nuevas (de un trader o de todo el escritorio). Lo que ya tienes abierto lo sigo cuidando. Escribe 'seguir' en Telegram para volver.";
     if (has("practica", "paper", "prueba", "real", "live")) return `Modo práctica: hago todo como si fuera de verdad, pero con $${a.start || 14} de mentira. Así ves cómo le iría a tu dinero sin arriesgar nada. Pasar a dinero real lo decides tú.`;

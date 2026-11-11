@@ -199,12 +199,18 @@
     if (live) { live.hidden = paper; live.textContent = "Live"; }
     $("#paper-coin").hidden = !paper;
     const pnl = d.today_pnl != null ? d.today_pnl : (st.balance - st.start_value);
-    const t = $("#today"); t.textContent = (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(st.today_pct) + ")"; t.className = "num " + (st.today_pct >= 0 ? "up" : "down");
+    const t = $("#today");
+    if (st.focus) {
+      const tp = d.today_pct || 0;
+      t.textContent = pnl ? (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(tp) + ") desde que opero " + (st.focus.symbol || st.focus.name) : "Todavía sin ganancias ni pérdidas";
+      t.className = "num " + (pnl > 0 ? "up" : pnl < 0 ? "down" : "flat");
+    } else { t.textContent = (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(st.today_pct) + ")"; t.className = "num " + (st.today_pct >= 0 ? "up" : "down"); }
     $("#mult").textContent = (d.multiplier != null ? d.multiplier : st.multiplier).toFixed(2) + "×";
     const startLbl = usd(d.start_value != null ? d.start_value : st.start_value, 0);
     const when = d.night_label || "08:00";
     const auto = d.auto ? " · Automático" : "";
-    const eq = $("#eq-label"); if (eq) eq.textContent = `Equity · ${startLbl} a las ${when}${auto}`;
+    const eq = $("#eq-label");
+    if (eq) eq.textContent = st.focus ? `Tu presupuesto · ${money0(d.ticket)} por compra` : `Equity · ${startLbl} a las ${when}${auto}`;
     const wl = $("#wl"); if (wl) wl.textContent = `${d.wins || 0}W / ${d.losses || 0}L`;
     const rk = $("#open-risk");
     if (rk) {
@@ -220,6 +226,8 @@
     renderPush(); resyncPush();
     renderTicker(d);
     renderFocus(st);
+    $("#ticker").hidden = !!st.focus;
+    $("#action").hidden = !!st.focus;
     renderDeskCard(d);
     renderLogger(d);
     renderStats(d);
@@ -234,23 +242,49 @@
     return price(v);
   }
   function big$(v) { return v == null ? "—" : v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1e3 ? "$" + Math.round(v / 1e3) + "K" : "$" + Math.round(v); }
+  function money0(v) { return v == null ? "—" : Math.abs(v - Math.round(v)) < 0.005 ? "$" + Math.round(v) : usd(v); }
+  function trName(r) { const n = r.name || r.label || ""; return !n || /^Trader \d+$/.test(n) ? (r.short || (r.wallet || "").slice(0, 4) + "…") : n.length > 13 ? n.slice(0, 12) + "…" : n; }
   function renderFocus(st) {
     const el = $("#focus-card"); if (!el) return;
     const f = st.focus;
     const sub = $("#dash-sub");
-    if (!f) { el.innerHTML = ""; if (sub) sub.textContent = "BTC · ETH · SOL · XRP · práctica → real"; return; }
+    document.body.classList.toggle("fx", !!f);
+    if (!f) { el.innerHTML = ""; if (sub) sub.textContent = "copiando a los mejores traders · práctica → real"; return; }
     if (sub) sub.textContent = `Solo ${f.symbol || f.name} · copiando a sus mejores traders`;
     const ch = (f.safety && f.safety.checks) || [];
     const okN = ch.filter((c) => c.ok).length;
-    const safe = !ch.length ? `<span class="fc-s wait">seguridad: revisando…</span>`
-      : f.safety.ok ? `<span class="fc-s ok">seguridad ${okN}/${ch.length} ✓</span>` : `<span class="fc-s bad">⚠ ${esc(f.safety.reason || "no segura")}</span>`;
-    const team = f.team ? `${f.team_in ?? 0} de ${f.team} traders dentro` : "eligiendo traders…";
-    const h = `<div class="focus-card tap" id="focus-open">
+    const safe = !ch.length ? `<b class="wait">revisando…</b>` : f.safety.ok ? `<b class="ok">${okN}/${ch.length} ✓</b>` : `<b class="bad">⚠ ${esc(f.safety.reason || "no segura")}</b>`;
+    const ins = new Set(f.wallets_in || []);
+    const act = (st.traders || []).filter((r) => !r.paused && (r.bench || "active") === "active");
+    const maj = f.team && f.team_in != null && f.team_in > f.team / 2;
+    const chips = act.map((r) => `<span class="fc-chip ${ins.has(r.wallet) ? "in" : ""}" title="${esc(r.name || r.label)}"><i></i>${esc(trName(r))}</span>`).join("");
+    const chg = f.chg24 == null ? "" : `<span class="fc-ch ${f.chg24 >= 0 ? "up" : "down"}">${f.chg24 >= 0 ? "+" : ""}${Math.round(f.chg24).toLocaleString("es")}% 24h</span>`;
+    const a = st.action;
+    let actH;
+    if (a && (a.kind === "buy" || a.kind === "sell")) {
+      const sym = esc(f.symbol || f.name);
+      actH = `<div class="fc-alert ${a.kind}">
+        <div class="fc-at">${a.kind === "buy" ? `¡Compra ya! ${sym} · pon ${money0(a.size != null ? a.size : f.ticket)}` : `¡Vende ya! ${sym}`}</div>
+        ${a.sub ? `<div class="fc-as">${esc(a.sub)}</div>` : ""}
+        <a class="fc-btn ${a.kind} tap" id="fc-btn" href="${esc(a.url)}" target="_blank" rel="noopener">${a.kind === "buy" ? `Comprar ${money0(a.size != null ? a.size : f.ticket)} en FOMO` : "Vender 100% en FOMO"}</a>
+        ${a.demo ? `<div class="fc-demo">EJEMPLO · datos de prueba</div>` : ""}</div>`;
+    } else if (a && a.kind === "parar") {
+      actH = `<div class="fc-alert sell"><div class="fc-at">${esc(a.title)}</div><button class="fc-btn parar tap" data-cb="${esc(a.callback)}">Parar</button></div>`;
+    } else {
+      actH = `<div class="fc-calm"><span class="fc-dot"></span><span>Sin aviso ahora. Te mando <b>¡Compra ya!</b> (${money0(f.ticket)}) cuando la mayoría esté dentro y uno compre, y <b>¡Vende ya!</b> cuando la mayoría venda.</span></div>
+        <a class="fc-link tap" href="${esc(f.url)}" target="_blank" rel="noopener">Ver ${esc(f.symbol || f.name)} en FOMO ›</a>`;
+    }
+    const h = `<div class="focus-card ${a ? "hot" : ""}">
       <div class="fc-top"><span class="fc-av">${esc((f.symbol || "?")[0])}</span>
-        <span class="fc-nm"><b>${esc(f.name)}</b> <span class="fc-tk">${esc(f.symbol || "")}</span><div class="fc-sub">Capitalización ${big$(f.mcap)} · precio ${tprice(f.price, f.symbol)}</div></span>
-        <a class="fc-go tap" href="${esc(f.url)}" target="_blank" rel="noopener">Ver en FOMO</a></div>
-      <div class="fc-row">${safe}<span class="fc-t">${esc(team)}</span></div>
-      <div class="fc-note">Te aviso Comprar cuando la mayoría de sus traders top esté dentro y uno compre; Vender cuando la mayoría venda. Antes de cada Comprar reviso que no sea estafa.</div>
+        <span class="fc-nm"><b>${esc(f.name)}</b> <span class="fc-tk">${esc(f.symbol || "")}</span></span>${chg}</div>
+      <div class="fc-grid">
+        <div><span>Precio</span><b>${tprice(f.price, f.symbol)}</b></div>
+        <div><span>Capitalización</span><b>${big$(f.mcap)}</b></div>
+        <div><span>Seguridad</span>${safe}</div>
+        <div><span>Traders dentro</span><b class="${maj ? "ok" : ""}">${f.team ? `${f.team_in ?? 0} de ${f.team}` : "…"}</b></div>
+      </div>
+      ${chips ? `<div class="fc-chips">${chips}</div>` : ""}
+      ${actH}
     </div>`;
     if (el._h !== h) { el.innerHTML = h; el._h = h; }
   }
@@ -306,7 +340,7 @@
     const best = d.best != null ? `mejor ${d.best >= 0 ? "+" : ""}${usd(d.best)}` : "";
     const worst = d.worst != null ? `peor ${d.worst >= 0 ? "+" : ""}${usd(d.worst)}` : "";
     const right = [best, worst].filter(Boolean).join(" · ") || "sin copias cerradas";
-    el.innerHTML = `<div class="stats-h">Esta noche<span class="r">${esc(right)}</span></div>
+    el.innerHTML = `<div class="stats-h">${S.state && S.state.focus ? "Desde que opero " + esc(S.state.focus.symbol || S.state.focus.name) : "Esta noche"}<span class="r">${esc(right)}</span></div>
       <div class="stats-grid">${rows.map((r) => {
         const w = Math.round(100 * (r.n || 0) / max);
         return `<div class="srow"><div class="sl"><span>${esc(r.label)}</span><span class="sn ${r.n ? "" : "zero"}">${r.n || 0}</span></div>

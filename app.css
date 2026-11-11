@@ -493,3 +493,38 @@ details.adv summary::-webkit-details-marker{display:none}
 .focus-card .fc-s.ok{color:#3dff88}.focus-card .fc-s.bad{color:#ff5a6a}.focus-card .fc-s.wait{color:#9aaba4}
 .focus-card .fc-t{color:#d6e2dd}
 .focus-card .fc-note{margin-top:7px;font-size:11.5px;line-height:1.35;color:#7f918a}
+
+/* ---------- v11 tidy Home (one memecoin): header -> status card -> office -> equity ---------- */
+body.fx #v-home .tr-row{display:none}
+body.fx #v-home .floor-scene{padding-top:4px}
+#v-home .desk-slot.show .bubble{visibility:visible}
+#v-home .desk-slot.show[data-st=idle] .bubble{background:#dfe8e3;color:#26302b}
+#v-home .bubble{width:118px;font-size:10.5px;line-height:1.25;text-align:center}
+#v-home .bubble .say{display:block;-webkit-line-clamp:unset;overflow:visible;white-space:normal;word-break:break-word}
+.focus-card{margin:10px 0 6px;padding:14px;border-radius:18px;background:#0b1511;border:1px solid rgba(61,255,136,.22)}
+.focus-card.hot{border-color:rgba(61,255,136,.6);box-shadow:0 0 22px rgba(61,255,136,.16)}
+.focus-card .fc-top{display:flex;align-items:center;gap:10px}
+.focus-card .fc-nm b{font-size:17px}
+.focus-card .fc-tk{font-size:13px}
+.focus-card .fc-ch{font-size:12px;font-weight:700;border-radius:999px;padding:3px 8px;background:rgba(61,255,136,.12);color:#3dff88;flex:none}
+.focus-card .fc-ch.down{background:rgba(255,90,106,.12);color:#ff5a6a}
+.fc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.fc-grid>div{background:#0f1c17;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fc-grid span{font-size:11px;color:#7f918a}
+.fc-grid b{font-size:16px;color:#e9f5ef;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-grid b.ok{color:#3dff88}.fc-grid b.bad{color:#ff5a6a;font-size:13px;white-space:normal}.fc-grid b.wait{color:#9aaba4;font-size:13px}
+.fc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fc-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#9aaba4;background:#0f1c17;border:1px solid rgba(255,255,255,.07);border-radius:999px;padding:3px 9px}
+.fc-chip i{width:7px;height:7px;border-radius:50%;background:#3a4741}
+.fc-chip.in{color:#d8ffe8;border-color:rgba(61,255,136,.35)}.fc-chip.in i{background:#3dff88}
+.fc-calm{display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:12.5px;line-height:1.4;color:#9aaba4}
+.fc-calm b{color:#d8ffe8}
+.fc-dot{width:9px;height:9px;border-radius:50%;background:#3dff88;margin-top:4px;flex:none;box-shadow:0 0 8px #3dff88}
+.fc-link{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:#3dff88;text-decoration:none}
+.fc-alert{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.fc-at{font-size:20px;font-weight:800;line-height:1.2;color:#fff}
+.fc-as{font-size:13px;color:#9aaba4;line-height:1.35}
+.fc-btn{display:flex;align-items:center;justify-content:center;min-height:56px;border-radius:16px;font-size:19px;font-weight:800;text-decoration:none;color:#04140c;background:#3dff88;border:0}
+.fc-btn.sell{background:#ff5a6a;color:#fff}.fc-btn.parar{background:#ff9f0a}
+.fc-demo{font-size:11px;font-weight:800;letter-spacing:.06em;color:#ffd60a;text-align:center}
+#today.flat{color:#9aaba4}
