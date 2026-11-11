@@ -163,5 +163,55 @@
     ctx.fillText(score == null ? "–" : String(score), cx, cy);
   }
 
-  window.DeskChart = { line, candles, ring, colors: C };
+
+  // ---- v6 equity curve: thin neon line, soft glow, end dot. Flat start = horizontal line (honest).
+  function equity(canvas, data) {
+    const { ctx, w, h } = setup(canvas);
+    const pts = (data && data.points) || [];
+    const start = data && data.start_value;
+    const neon = "#3dff88";
+    const top = 10, bot = h - 8;
+    const lineY = (lo, hi, v) => bot - ((v - lo) / Math.max(hi - lo, 1e-9)) * (bot - top);
+    function stroke(xs, ys, xLast, yLast) {
+      ctx.save();
+      ctx.shadowColor = "rgba(61,255,136,.55)"; ctx.shadowBlur = 8;
+      ctx.strokeStyle = neon; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round";
+      ctx.beginPath();
+      xs.forEach((x, i) => (i ? ctx.lineTo(x, ys[i]) : ctx.moveTo(x, ys[i])));
+      ctx.stroke();
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(xLast, yLast, 3.4, 0, Math.PI * 2);
+      ctx.fillStyle = neon; ctx.fill();
+      ctx.beginPath(); ctx.arc(xLast, yLast, 6, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(61,255,136,.22)"; ctx.fill();
+    }
+    if (pts.length < 1) {
+      const y = (top + bot) * 0.62;
+      stroke([0, w], [y, y], w - 2, y);
+      return;
+    }
+    let lo = Infinity, hi = -Infinity;
+    pts.forEach((p) => { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); });
+    if (start != null) { lo = Math.min(lo, start); hi = Math.max(hi, start); }
+    if (hi - lo < 1e-6) { // flat night: draw a low horizontal neon line
+      const y = (top + bot) * 0.62;
+      stroke([0, w], [y, y], w - 2, y);
+      return;
+    }
+    const pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
+    const t0 = pts[0][0], t1 = pts[pts.length - 1][0];
+    const span = Math.max(1, t1 - t0);
+    const X = (t) => ((t - t0) / span) * (w - 8);
+    const Y = (v) => lineY(lo, hi, v);
+    const xs = pts.map((p) => X(p[0])), ys = pts.map((p) => Y(p[1]));
+    // faint fill
+    const g = ctx.createLinearGradient(0, top, 0, bot);
+    g.addColorStop(0, "rgba(61,255,136,0.18)"); g.addColorStop(1, "rgba(61,255,136,0)");
+    ctx.beginPath(); xs.forEach((x, i) => (i ? ctx.lineTo(x, ys[i]) : ctx.moveTo(x, ys[i])));
+    ctx.lineTo(xs[xs.length - 1], bot); ctx.lineTo(xs[0], bot); ctx.closePath();
+    ctx.fillStyle = g; ctx.fill();
+    stroke(xs, ys, xs[xs.length - 1], ys[ys.length - 1]);
+  }
+
+  window.DeskChart = { line, candles, ring, equity, colors: C };
 })();

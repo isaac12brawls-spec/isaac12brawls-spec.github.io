@@ -180,22 +180,114 @@
   }
 
   // ---------- HOME ----------
+  function paintEquity(el, v) {
+    const s = usd(v);
+    const i = s.lastIndexOf(".");
+    const head = i >= 0 ? s.slice(0, i) : s, tail = i >= 0 ? s.slice(i) : "";
+    if (!el.querySelector("#bal-int")) el.innerHTML = `<span id="bal-int" class="odo"></span><span class="cents" id="bal-cent"></span>`;
+    odo(el.querySelector("#bal-int"), head);
+    el.querySelector("#bal-cent").textContent = tail;
+  }
   function renderHome() {
     const st = S.state; if (!st) return;
+    const d = st.desk || {};
     $("#mult").classList.remove("sk");
-    odo($("#balance"), usd(st.balance));
+    paintEquity($("#balance"), st.balance);
     const paper = st.mode === "PAPER";
     $("#paper-home").hidden = !paper; $("#paper-home").textContent = "PRÁCTICA"; $("#paper-coin").hidden = !paper;
-    const t = $("#today"); t.textContent = pct(st.today_pct); t.className = "num " + (st.today_pct >= 0 ? "up" : "down");
-    $("#mult").textContent = st.multiplier.toFixed(2) + "×";
+    const live = $("#dash-live");
+    if (live) { live.textContent = paper ? "Práctica" : "Live"; live.classList.toggle("paper", paper); }
+    const pnl = d.today_pnl != null ? d.today_pnl : (st.balance - st.start_value);
+    const t = $("#today"); t.textContent = (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(st.today_pct) + ")"; t.className = "num " + (st.today_pct >= 0 ? "up" : "down");
+    $("#mult").textContent = (d.multiplier != null ? d.multiplier : st.multiplier).toFixed(2) + "×";
+    const startLbl = usd(d.start_value != null ? d.start_value : st.start_value, 0);
+    const when = d.night_label || "08:00";
+    const auto = d.auto ? " · Automático" : "";
+    const eq = $("#eq-label"); if (eq) eq.textContent = `Equity · ${startLbl} a las ${when}${auto}`;
+    const wl = $("#wl"); if (wl) wl.textContent = `${d.wins || 0}W / ${d.losses || 0}L`;
+    const rk = $("#open-risk");
+    if (rk) {
+      if (d.open_risk) { rk.hidden = false; rk.textContent = `-${d.open_risk.stop_pct}% · -${usd(d.open_risk.usd)}`; }
+      else rk.hidden = true;
+    }
     $("#bell-dot").hidden = !(st.unread > 0);
     const running = Object.values(st.agents).filter((a) => !a.paused).length;
     $("#running-n").textContent = running;
-    if (window.DeskOffice) DeskOffice.render($("#office"), st.office, st.traders);
+    if (window.DeskOffice && $("#office")) DeskOffice.render($("#office"), st.office, st.traders);
     renderTraders(st);
     renderAction(st);
+    renderTicker(d);
+    renderDeskCard(d);
+    renderLogger(d);
+    renderStats(d);
     $("#halt-slot").innerHTML = st.desk_halt ? `<div class="halt"><span>En pausa · ${esc(st.desk_halt.reason || "")}</span><button class="tap" id="seguir">Seguir</button></div>` : "";
-    if (!$("#details").hidden) renderCarousel();
+    if ($("#details") && !$("#details").hidden) renderCarousel();
+  }
+
+  function tprice(v, sym) {
+    if (v == null) return "—";
+    if (sym === "BTC") return "$" + Math.round(v).toLocaleString("en-US");
+    if (v >= 100) return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return price(v);
+  }
+  function renderTicker(d) {
+    const el = $("#ticker"); if (!el) return;
+    const rows = (d && d.tickers) || [];
+    if (!rows.length) { el.innerHTML = `<div class="tick empty"><span class="tn">BTC · ETH · SOL · XRP</span><span class="tp">esperando precios…</span></div>`; return; }
+    el.innerHTML = rows.map((r) => {
+      const ch = r.change_pct, cls = ch == null ? "" : ch >= 0 ? "up" : "down";
+      const chs = ch == null ? "" : `<span class="tc ${cls}">${ch >= 0 ? "+" : ""}${ch.toFixed(1)}%</span>`;
+      return `<div class="tick ${esc(r.symbol)}"><span class="av">${esc(r.symbol[0])}</span><span class="tn">${esc(r.symbol)}</span><span class="tp">${tprice(r.price, r.symbol)}</span>${chs}</div>`;
+    }).join("");
+  }
+
+  const AICO = {
+    scanner: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>`,
+    auditor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M8 6v14m8-14v14M4 10h16"/></svg>`,
+    analyst: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>`,
+    executor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>`,
+    risk: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4.5v6.5c0 4.2-3.2 7.5-8 8.7C7.2 21 4 17.7 4 13.5V7.5z"/></svg>`,
+    logger: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v5h5M8 13h8M8 17h6"/></svg>`,
+  };
+  function renderDeskCard(d) {
+    const el = $("#desk-card"); if (!el) return;
+    const rows = (d && d.agents) || [];
+    const scanned = (d && d.scanned) || 0, traded = (d && d.traded) || 0, n = rows.length || 6;
+    const sc = scanned >= 1000 ? (scanned / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(scanned);
+    el.innerHTML = `<div class="desk-h">Desk · ${n} agentes<span class="r">${sc} revisados · ${traded} copias</span></div>` +
+      (rows.length ? rows.map((a) => `<div class="arow" data-agent="${esc(a.id)}">
+        <span class="aico ${esc(a.id)}">${AICO[a.id] || ""}</span>
+        <span><div class="anm">${esc(a.name)}</div><div class="asub">${esc(a.sub || "")}</div></span>
+        <span class="amid ${esc(a.mid_tone || "")}">${esc(a.mid || "—")}</span>
+        <span class="aright ${esc(a.right_tone || "")}">${esc(a.right || "")}</span>
+      </div>`).join("") : `<div class="empty">Esperando a los agentes…</div>`);
+  }
+  function renderLogger(d) {
+    const el = $("#logger"), cnt = $("#log-count"); if (!el) return;
+    const rows = ((d && d.log) || []).slice(0, 8);
+    if (cnt) cnt.textContent = rows.length ? `${(d.log || []).length} eventos` : "";
+    if (!rows.length) { el.innerHTML = `<div class="empty log-empty">Esperando actividad…</div>`; return; }
+    el.innerHTML = rows.map((r) => {
+      const ag = (r.agent || "logger").toLowerCase();
+      const tone = r.tone || r.kind || "info";
+      return `<div class="log-line"><i class="log-dot ${esc(tone)}"></i><span class="log-tm">${hhmm(r.ts)}</span>
+        <span class="log-tx"><b class="${esc(ag)}">${esc(ag.toUpperCase())}:</b><span class="${esc(tone)}">${esc(r.text)}</span></span></div>`;
+    }).join("");
+  }
+  function renderStats(d) {
+    const el = $("#desk-stats"); if (!el) return;
+    const rows = (d && d.stats) || [];
+    if (!rows.length) { el.innerHTML = ""; return; }
+    const max = Math.max(1, ...rows.map((r) => r.n || 0));
+    const best = d.best != null ? `mejor ${d.best >= 0 ? "+" : ""}${usd(d.best)}` : "";
+    const worst = d.worst != null ? `peor ${d.worst >= 0 ? "+" : ""}${usd(d.worst)}` : "";
+    const right = [best, worst].filter(Boolean).join(" · ") || "sin copias cerradas";
+    el.innerHTML = `<div class="stats-h">Esta noche<span class="r">${esc(right)}</span></div>
+      <div class="stats-grid">${rows.map((r) => {
+        const w = Math.round(100 * (r.n || 0) / max);
+        return `<div class="srow"><div class="sl"><span>${esc(r.label)}</span><span class="sn ${r.n ? "" : "zero"}">${r.n || 0}</span></div>
+          <div class="sbar"><i style="width:${w}%"></i></div></div>`;
+      }).join("")}</div>`;
   }
 
   function renderAction(st) {
@@ -254,10 +346,11 @@
   function renderChart() {
     const c = S.chart, st = S.state; if (!c || !st) return;
     const empty = !st.has_trades;
-    $("#chart-empty").hidden = !empty;
-    DeskChart.line($("#home-chart"), empty ? { points: [], marks: [] } : Object.assign({}, c, { marks: [] }));
+    const ce = $("#chart-empty"); if (ce) { ce.hidden = !empty; ce.style.top = ""; }
+    const pts = (c.points && c.points.length) ? c.points : [];
+    if (window.DeskChart && DeskChart.equity) DeskChart.equity($("#home-chart"), { points: pts, start_value: c.start_value });
+    else DeskChart.line($("#home-chart"), { points: pts, marks: [], start_value: c.start_value });
     $$("#ranges button").forEach((b) => b.classList.toggle("on", b.dataset.r === S.range));
-    const ce = $("#chart-empty"); if (ce) ce.style.top = "35%";
   }
 
   const LAYER_SHORT = ["Mint", "Freeze", "Dev", "Top 10", "LP", "Age", "Bundles", "Deleg."];

@@ -1,5 +1,5 @@
 :root{
-  --bg:#000;--text:#fff;--sec:rgba(235,235,245,.6);--ter:rgba(235,235,245,.3);--sep:rgba(84,84,88,.55);
+  --bg:#070b0a;--text:#fff;--sec:rgba(235,235,245,.6);--ter:rgba(235,235,245,.3);--sep:rgba(84,84,88,.55);
   --card:#1c1c1e;--card2:#2c2c2e;--green:#00d35a;--red:#ff453a;--orange:#ff9f0a;--cyan:#64d2ff;--blue:#0a84ff;
   --yellow:#ffd60a;--pink:#ff6b9a;
   --disp:-apple-system,"SF Pro Display",BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -349,3 +349,105 @@ details.adv summary::-webkit-details-marker{display:none}
 .coin-pill.on{background:rgba(0,211,90,.16);color:var(--green);text-decoration:none}
 /* keep the Home action card clear of the Grok helper bubble */
 #v-home #action{padding-right:58px}
+
+
+/* ---------- v6 video-style desk (Home) ---------- */
+#v-home.dash{background:#070b0a;padding-left:14px;padding-right:14px}
+.dash-top{display:flex;align-items:center;justify-content:center;position:relative;height:calc(36px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);margin:0 -14px;position:sticky;top:0;z-index:5;background:linear-gradient(#070b0a 70%,rgba(7,11,10,0))}
+.dash-run{display:inline-flex;align-items:center;gap:7px;background:#101614;border:1px solid rgba(61,255,136,.18);color:#d8ffe8;font-size:12px;font-weight:600;letter-spacing:.2px;padding:5px 12px;border-radius:999px}
+.dash-run i{width:7px;height:7px;border-radius:50%;background:#3dff88;box-shadow:0 0 8px #3dff88;display:block}
+.dash-run i{animation:run-dot 1.8s ease-in-out infinite}
+@keyframes run-dot{0%,100%{opacity:1}50%{opacity:.45}}
+.dash-meta{position:absolute;right:14px;top:calc(8px + env(safe-area-inset-top));display:flex;align-items:center;gap:8px;color:#6e7d76;font-size:11px;font-weight:600}
+.dash-meta .pill-paper{font-size:10px;padding:2px 7px}
+.dash-brand{display:flex;align-items:center;gap:10px;margin:4px 0 8px}
+.dash-logo{width:36px;height:36px;flex:none}
+.dash-logo svg{width:36px;height:36px;display:block}
+.dash-brand-txt{flex:1;min-width:0}
+.dash-title{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
+.dash-sub{color:#7c8c85;font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-right{display:flex;align-items:center;gap:4px;flex:none}
+.dash-live{background:#3dff88;color:#06210f;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;letter-spacing:.2px}
+.dash-live.paper{background:rgba(255,159,10,.18);color:#ffb340;border:1px solid rgba(255,159,10,.35)}
+.dash-brand .icon-btn{width:36px;height:36px;color:#8a9a93}
+.dash-brand .icon-btn svg{width:18px;height:18px}
+
+.ticker{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;margin:2px -14px 8px;padding:4px 14px;white-space:nowrap}
+.ticker::-webkit-scrollbar{display:none}
+.tick{display:flex;align-items:center;gap:7px;flex:none}
+.tick .av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:800;color:#04140c;background:#3dff88}
+.tick.BTC .av{background:#f7931a;color:#111}.tick.ETH .av{background:#627eea;color:#fff}
+.tick.SOL .av{background:#9945ff;color:#fff}.tick.XRP .av{background:#23292f;color:#fff;border:1px solid #555}
+.tick .tn{font-size:12px;font-weight:700}
+.tick .tp{font-size:11px;color:#9aaba4;font-variant-numeric:tabular-nums}
+.tick .tc{font-size:11px;font-weight:700}
+.tick .tc.up{color:#3dff88}.tick .tc.down{color:#ff5a6a}
+.tick.empty .tp{color:#5a6a64}
+
+.equity{padding:2px 0 0}
+.eq-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.eq-label{color:#8a9a93;font-size:12px;font-weight:500}
+.eq-mult{background:#3dff88;color:#06210f;font-size:13px;font-weight:800;padding:4px 10px;border-radius:999px;box-shadow:0 0 12px rgba(61,255,136,.25)}
+.eq-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:2px}
+#v-home .balance{font-size:58px;font-weight:650;letter-spacing:-2px;line-height:1;height:auto;overflow:visible;color:#fff}
+#v-home .balance .cents{font-size:28px;font-weight:560;letter-spacing:-.8px;color:rgba(255,255,255,.42);margin-left:1px;vertical-align:super}
+.eq-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:8px}
+.eq-risk{background:rgba(255,90,106,.16);color:#ff6d7c;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+.eq-wl{color:#6e7d76;font-size:12px;font-weight:600}
+.eq-pnl{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:2px;font-size:16px;font-weight:650}
+.eq-pnl .up{color:#3dff88}.eq-pnl .down{color:#ff5a6a}
+.eq-wait{color:#6e7d76;font-size:12px;font-weight:500}
+#v-home .mini-chart{height:86px;margin:4px -14px 8px;padding:0}
+#v-home .mini-chart canvas{width:100%;height:100%}
+
+#v-home .action{margin-top:4px;padding-right:58px}
+#v-home .act-card{background:#101614;border:1px solid rgba(255,255,255,.06);border-radius:16px}
+#v-home .halt{background:rgba(255,90,106,.12);border:1px solid rgba(255,90,106,.25)}
+
+.desk-card,.log-card,.stats-card{background:#101614;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px 12px 8px;margin-top:10px}
+.desk-h,.log-h,.stats-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:15px;font-weight:700}
+.desk-h .r,.log-h span,.stats-h .r{color:#7c8c85;font-size:12px;font-weight:600}
+.log-h span{color:#ff6d7c}
+.arow{display:grid;grid-template-columns:36px minmax(86px,.9fr) 1fr auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid rgba(255,255,255,.04);min-height:44px}
+.arow:first-of-type{border-top:0}
+.aico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center}
+.aico svg{width:16px;height:16px}
+.anm{font-size:13px;font-weight:700;line-height:1.15}
+.asub{font-size:10px;color:#6e7d76;margin-top:1px}
+.amid{font-size:12px;color:#c5d4ce;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.amid.muted{color:#5f6e68}.amid.pass{color:#3dff88}.amid.kill{color:#ff6d7c}.amid.info{color:#c5d4ce}.amid.risk{color:#c9a6ff}
+.aright{font-size:12px;font-weight:700;white-space:nowrap;color:#3dff88}
+.aright.muted{color:#5f6e68}.aright.risk{color:#c9a6ff}.aright.ok{color:#3dff88}
+.aico.scanner{background:rgba(90,200,255,.16);color:#5ac8ff}
+.aico.auditor{background:rgba(255,159,67,.16);color:#ff9f43}
+.aico.analyst{background:rgba(167,139,250,.16);color:#a78bfa}
+.aico.executor{background:rgba(61,255,136,.16);color:#3dff88}
+.aico.risk{background:rgba(201,166,255,.16);color:#c9a6ff}
+.aico.logger{background:rgba(62,224,192,.16);color:#3ee0c0}
+
+.logger{display:flex;flex-direction:column;gap:2px;max-height:210px;overflow:hidden}
+.log-line{display:grid;grid-template-columns:8px 38px 1fr;gap:6px;align-items:baseline;padding:5px 0;font-size:12px;line-height:1.3}
+.log-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;background:#6e7d76}
+.log-dot.kill,.log-dot.short{background:#ff5a6a}
+.log-dot.pass,.log-dot.bought{background:#3dff88}
+.log-dot.risk,.log-dot.stop{background:#c9a6ff}
+.log-dot.info,.log-dot.poll{background:#5ac8ff}
+.log-tm{color:#5f6e68;font-variant-numeric:tabular-nums;font-size:11px}
+.log-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c5d4ce}
+.log-tx b{font-weight:700;margin-right:4px}
+.log-tx b.scanner{color:#5ac8ff}.log-tx b.auditor{color:#ff9f43}.log-tx b.analyst{color:#a78bfa}
+.log-tx b.executor{color:#3dff88}.log-tx b.risk{color:#c9a6ff}.log-tx b.logger{color:#3ee0c0}
+.log-tx .kill,.log-tx .short{color:#ff6d7c}.log-tx .pass,.log-tx .bought{color:#3dff88}
+.log-empty{text-align:left;padding:8px 0;color:#6e7d76;font-size:13px}
+
+.stats-h{margin-bottom:10px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.srow .sl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;color:#9aaba4}
+.srow .sn{font-size:13px;font-weight:700;color:#ff6d7c}
+.srow .sn.zero{color:#6e7d76}
+.sbar{height:2px;border-radius:2px;background:rgba(255,90,106,.15);margin-top:4px;overflow:hidden}
+.sbar i{display:block;height:100%;background:#ff5a6a;width:0;border-radius:2px}
+
+#gb .gb-btn{background:#141a17;border-color:rgba(191,90,242,.35)}
+#v-home.dash .bottom-pad{height:calc(var(--tabh) + 96px + env(safe-area-inset-bottom))}
+@media (prefers-reduced-motion: reduce){.dash-run i{animation:none}}

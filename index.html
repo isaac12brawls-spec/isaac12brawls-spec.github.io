@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#070b0a">
 <meta name="color-scheme" content="dark">
 <meta name="referrer" content="no-referrer">
 <meta name="mobile-web-app-capable" content="yes">
@@ -24,32 +24,55 @@
     <div class="aw-sub">Este teléfono todavía no tiene la llave. Toca una vez el enlace que te mandó Grok Bot y queda guardada aquí.</div>
   </div>
 
-  <!-- HOME -->
-  <section id="v-home" class="view active">
-    <header class="navbar">
-      <div class="nav-title home-title">Grok Desk Trading <span class="pill-paper" id="paper-home">PRÁCTICA</span></div>
-      <div class="nav-right">
-        <button class="icon-btn tap" id="btn-bell" aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg><i id="bell-dot" hidden></i></button>
-      </div>
+  <!-- HOME v6: video-style desk, real data only -->
+  <section id="v-home" class="view active dash">
+    <header class="dash-top">
+      <div class="dash-run"><i></i> night run</div>
+      <div class="dash-meta"><span class="pill-paper" id="paper-home">PRÁCTICA</span> <span id="running-n">5</span> agentes</div>
     </header>
     <div class="err-slot"></div>
-    <div class="office" id="office"></div>
-    <div class="home-balance simple left">
-      <div class="bal-label">Saldo del escritorio</div>
-      <div class="bal-row"><div id="balance" class="balance odo sk-able"></div></div>
-      <div class="bal-sub"><span id="today" class="num"></span><span class="bal-hint">esta noche</span><span id="mult" class="pill-mult num" hidden></span></div>
+    <div class="dash-brand">
+      <div class="dash-logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#141a17"/><circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M16 7a9 9 0 0 0 0 18 4.5 4.5 0 0 0 0-9 4.5 4.5 0 0 1 0-9z" fill="#fff"/><circle cx="16" cy="11.5" r="2" fill="#141a17"/><circle cx="16" cy="20.5" r="2" fill="#fff"/></svg>
+      </div>
+      <div class="dash-brand-txt">
+        <div class="dash-title">Grok Desk Trading</div>
+        <div class="dash-sub">BTC · ETH · SOL · XRP · práctica → real</div>
+      </div>
+      <div class="dash-right">
+        <span class="dash-live" id="dash-live">Práctica</span>
+        <button class="icon-btn tap" id="btn-bell" aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg><i id="bell-dot" hidden></i></button>
+      </div>
     </div>
-    <div class="mini-chart">
-      <canvas id="home-chart"></canvas>
-      <div id="chart-empty" class="chart-empty" hidden>Esperando la primera copia</div>
+    <div class="ticker" id="ticker"></div>
+    <div class="equity">
+      <div class="eq-top">
+        <div class="eq-label" id="eq-label">Equity</div>
+        <div class="eq-mult pill-mult num" id="mult">1.00×</div>
+      </div>
+      <div class="eq-row">
+        <div id="balance" class="balance odo sk-able"></div>
+        <div class="eq-side">
+          <div id="open-risk" class="eq-risk" hidden></div>
+          <div id="wl" class="eq-wl">0W / 0L</div>
+        </div>
+      </div>
+      <div class="eq-pnl"><span id="today" class="num"></span><span id="chart-empty" class="eq-wait" hidden>esperando la primera copia</span></div>
+      <div class="mini-chart">
+        <canvas id="home-chart"></canvas>
+      </div>
     </div>
     <div id="halt-slot"></div>
     <div id="action" class="action"></div>
-    <button class="details-btn tap" id="details-toggle">Ver detalles <span class="chev">›</span></button>
+    <div class="desk-card" id="desk-card"></div>
+    <div class="log-card">
+      <div class="log-h">Logger <span id="log-count"></span></div>
+      <div id="logger" class="logger"><div class="empty log-empty">Esperando actividad…</div></div>
+    </div>
+    <div class="stats-card" id="desk-stats"></div>
+    <div class="office" id="office" hidden></div>
     <div id="details" hidden>
-      <div class="sec-h"><span>Agentes · <span id="running-n">5</span> trabajando</span></div>
       <div class="carousel" id="carousel"></div>
-      <div class="sec-h"><span>Últimos movimientos</span><button class="link tap" data-go="activity">Ver todo</button></div>
       <div class="list" id="home-activity"></div>
     </div>
     <div class="bottom-pad"></div>
