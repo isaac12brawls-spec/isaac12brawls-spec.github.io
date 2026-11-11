@@ -31,7 +31,7 @@
     const s = v.toPrecision(4); return "$" + (s.includes("e") ? Number(s).toFixed(12).replace(/0+$/, "") : s);
   };
   const pct = (v, d = 2) => (v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(d) + "%");
-  const hhmm = (ts) => new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const hhmm = (ts) => new Date(ts * 1000).toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit", hour12: false });
   const fmtNum = (v) => (Number(v) === Math.round(v) ? String(Math.round(v)) : String(+Number(v).toFixed(4)));
 
   // ---------- data access (plan A: /api with the token; plan B: JSON files under the secret path) ----------
@@ -194,9 +194,10 @@
     $("#mult").classList.remove("sk");
     paintEquity($("#balance"), st.balance);
     const paper = st.mode === "PAPER";
-    $("#paper-home").hidden = !paper; $("#paper-home").textContent = "PRÁCTICA"; $("#paper-coin").hidden = !paper;
-    const live = $("#dash-live");
-    if (live) { live.textContent = paper ? "Práctica" : "Live"; live.classList.toggle("paper", paper); }
+    const ph = $("#paper-home"), live = $("#dash-live");
+    if (ph) { ph.hidden = !paper; ph.textContent = "Práctica"; }
+    if (live) { live.hidden = paper; live.textContent = "Live"; }
+    $("#paper-coin").hidden = !paper;
     const pnl = d.today_pnl != null ? d.today_pnl : (st.balance - st.start_value);
     const t = $("#today"); t.textContent = (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(st.today_pct) + ")"; t.className = "num " + (st.today_pct >= 0 ? "up" : "down");
     $("#mult").textContent = (d.multiplier != null ? d.multiplier : st.multiplier).toFixed(2) + "×";
@@ -211,7 +212,7 @@
       else rk.hidden = true;
     }
     $("#bell-dot").hidden = !(st.unread > 0);
-    const running = Object.values(st.agents).filter((a) => !a.paused).length;
+    const running = (d.agents && d.agents.length) || (Object.values(st.agents).filter((a) => !a.paused).length + 1);
     $("#running-n").textContent = running;
     if (window.DeskOffice && $("#office")) DeskOffice.render($("#office"), st.office, st.traders);
     renderTraders(st);
@@ -264,7 +265,7 @@
   }
   function renderLogger(d) {
     const el = $("#logger"), cnt = $("#log-count"); if (!el) return;
-    const rows = ((d && d.log) || []).slice(0, 8);
+    const rows = ((d && d.log) || []).slice(0, 5);
     if (cnt) cnt.textContent = rows.length ? `${(d.log || []).length} eventos` : "";
     if (!rows.length) { el.innerHTML = `<div class="empty log-empty">Esperando actividad…</div>`; return; }
     el.innerHTML = rows.map((r) => {
