@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Desk">
+<title>Grok Bot Desk</title>
+<link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="app">
+  <div id="err" class="err" hidden></div>
+  <div id="authwall" class="authwall" hidden>
+    <div class="aw-title">Abre el enlace del escritorio</div>
+    <div class="aw-sub">Este teléfono todavía no tiene la llave. Toca una vez el enlace que te mandó Grok Bot y queda guardada aquí.</div>
+  </div>
+
+  <!-- HOME -->
+  <section id="v-home" class="view active">
+    <header class="navbar">
+      <div class="nav-title home-title">Mi escritorio <span class="pill-paper" id="paper-home">PRÁCTICA</span></div>
+      <div class="nav-right">
+        <button class="icon-btn tap" id="btn-bell" aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg><i id="bell-dot" hidden></i></button>
+      </div>
+    </header>
+    <div class="err-slot"></div>
+    <div class="office" id="office"></div>
+    <div class="home-balance simple left">
+      <div class="bal-label">Saldo del escritorio</div>
+      <div class="bal-row"><div id="balance" class="balance odo sk-able"></div></div>
+      <div class="bal-sub"><span id="today" class="num"></span><span class="bal-hint">esta noche</span><span id="mult" class="pill-mult num" hidden></span></div>
+    </div>
+    <div class="mini-chart">
+      <canvas id="home-chart"></canvas>
+      <div id="chart-empty" class="chart-empty" hidden>Esperando la primera copia</div>
+    </div>
+    <div id="halt-slot"></div>
+    <div id="action" class="action"></div>
+    <button class="details-btn tap" id="details-toggle">Ver detalles <span class="chev">›</span></button>
+    <div id="details" hidden>
+      <div class="sec-h"><span>Agentes · <span id="running-n">5</span> trabajando</span></div>
+      <div class="carousel" id="carousel"></div>
+      <div class="sec-h"><span>Últimos movimientos</span><button class="link tap" data-go="activity">Ver todo</button></div>
+      <div class="list" id="home-activity"></div>
+    </div>
+    <div class="bottom-pad"></div>
+  </section>
+
+  <!-- TRADERS -->
+  <section id="v-traders" class="view">
+    <header class="navbar plain"><div class="big-title">Traders</div></header>
+    <div class="err-slot"></div>
+    <div class="tlead">Copio a estos 5. Si uno no te gusta, apágalo.</div>
+    <div class="traders" id="traders"></div>
+    <div class="tnote" id="traders-note"></div>
+    <button class="details-btn tap" id="rerank-info">¿Cómo los elijo? <span class="chev">›</span></button>
+    <div class="bottom-pad"></div>
+  </section>
+
+  <!-- AGENTS -->
+  <section id="v-agents" class="view">
+    <header class="navbar sub"><button class="back tap" data-tab="home" aria-label="Atrás">‹</button><div class="sub-title">Agentes</div></header>
+    <div class="err-slot"></div>
+    <div id="agents-list" class="agents-list"></div>
+    <div class="bottom-pad"></div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section id="v-activity" class="view">
+    <header class="navbar plain"><div class="big-title">Historial</div></header>
+    <div class="err-slot"></div>
+    <div class="list" id="activity-list"></div>
+    <button class="more tap" id="activity-more" hidden>Ver más</button>
+    <div class="bottom-pad"></div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section id="v-account" class="view">
+    <header class="navbar plain"><div class="big-title">Ajustes</div></header>
+    <div class="err-slot"></div>
+    <div id="account-body"></div>
+    <div class="bottom-pad"></div>
+  </section>
+
+  <!-- COIN (pushed screen) -->
+  <section id="v-coin" class="view pushed">
+    <header class="navbar sub"><button class="back tap" data-back aria-label="Atrás">‹</button><div class="sub-title" id="coin-title"></div><span class="pill-paper" id="paper-coin">PAPER</span></header>
+    <div class="err-slot"></div>
+    <div id="coin-body"></div>
+  </section>
+
+  <!-- AUDITOR (pushed screen) -->
+  <section id="v-audit" class="view pushed">
+    <header class="navbar sub"><button class="back tap" data-back aria-label="Atrás">‹</button><div class="sub-title">Auditor</div></header>
+    <div class="err-slot"></div>
+    <div id="audit-body"></div>
+  </section>
+
+  <!-- overlays -->
+  <div id="sheet" class="sheet" hidden><div class="sheet-card"><div id="sheet-body"></div></div></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <nav class="tabbar">
+    <button class="tab tap active" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Inicio</span></button>
+    <button class="tab tap" data-tab="traders"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5M15 15c2.8-.3 5 1.3 6 4.5"/></svg><span>Traders</span></button>
+    <button class="tab tap" data-tab="activity"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Historial</span></button>
+    <button class="tab tap" data-tab="account"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Ajustes</span></button>
+  </nav>
+</div>
+<script>window.GHP={"owner": "isaac12brawls-spec", "repo": "isaac12brawls-spec.github.io", "branch": "data", "file": "b.enc", "api": "https://api.github.com", "raw": "https://raw.githubusercontent.com"};</script>
+<script src="/chart.js"></script>
+<script src="/office.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
