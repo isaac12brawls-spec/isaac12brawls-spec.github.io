@@ -315,6 +315,9 @@ details.adv summary::-webkit-details-marker{display:none}
 .coin-h{display:flex;align-items:baseline;gap:6px;margin:16px 2px 6px;font-size:13px;color:var(--sec)}
 .coin-h b{color:var(--text);font-size:15px}
 .coin-h span{margin-left:auto;font-size:12px;color:var(--ter)}
+.coin-subh{padding:8px 14px 2px;font-size:12px;font-weight:600;color:var(--sec);letter-spacing:.02em}
+.trow.reserve{opacity:.72}
+.trow.reserve .rk{background:transparent;border:.5px solid var(--sep);color:var(--ter)}
 .tr-av.coin{width:auto;padding:0 7px;border-radius:13px;gap:3px;display:flex;font-size:10px}
 .tr-av.coin i{font-style:normal;color:var(--green)}
 

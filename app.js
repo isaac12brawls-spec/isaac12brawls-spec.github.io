@@ -319,23 +319,28 @@
     }
     const fol = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(1)} M` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : `${n}`;
     const hl = rows[0].data_src === "hyperliquid";
-    const row = (r, i) => `<div class="trow tk ${r.paused ? "paused" : ""}">
+    const roleOf = (r, c) => ((r.bench_for || {})[c]) || r.bench || "active";
+    const row = (r, i, reserve) => `<div class="trow tk ${r.paused ? "paused" : ""} ${reserve ? "reserve" : ""}">
         <span class="rk">${i}</span>
         <span class="mid"><div class="t">${esc(r.name || r.label)}${r.handle ? ` <span class="hd">@${esc(r.handle)}</span>` : ""}</div>
         <div class="s">${r.paused ? "Apagado" : hl
           ? `opera ${esc((r.coins || []).join(" · ") || "—")} · acierta ${Math.round((r.win_rate || 0) * 100)}% (${r.wins ?? 0} de ${r.closes ?? 0})`
           : `${r.trades ?? "?"} operaciones · ${r.days ? Math.round(r.days) : "?"} días · acierta ${Math.round(((r.kol_win_rate_30d ?? r.win_rate) || 0) * 100)}%`}</div>
         ${r.why ? `<div class="why">${esc(r.why)}</div>` : ""}</span>
-        <span class="r ${(r.pnl_30d || 0) >= 0 ? "up" : "down"}">${(r.pnl_30d || 0) >= 0 ? "+" : ""}${usd(r.pnl_30d, 0)}<small>30 días</small></span>
+        <span class="r ${(r.pnl_30d || 0) >= 0 ? "up" : "down"}">${(r.pnl_30d || 0) >= 0 ? "+" : ""}${usd(r.pnl_30d, 0)}<small>30 días${r.pnl_7d != null ? ` · sem. ${(r.pnl_7d) >= 0 ? "+" : ""}${usd(r.pnl_7d, 0)}` : ""}</small></span>
         <button class="swwrap tap" data-trader="${esc(r.wallet)}" data-tp="${r.paused ? 1 : 0}" aria-label="pausar o seguir"><span class="sw ${r.paused ? "" : "on"}"></span></button></div>`;
     const NAMES = { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", XRP: "XRP" };
     $("#traders").innerHTML = hl
       ? ["BTC", "ETH", "SOL", "XRP"].map((c) => {
           const g = rows.filter((r) => (r.chosen_for || []).includes(c));
-          return `<div class="coin-h"><b>${c}</b> ${NAMES[c]} <span>${g.length} trader${g.length === 1 ? "" : "s"}</span></div>` +
-            (g.length ? g.map((r, i) => row(r, i + 1)).join("") : `<div class="empty" style="padding:10px 14px;text-align:left">Hoy ninguno pasó todos los filtros</div>`);
+          const act = g.filter((r) => roleOf(r, c) === "active");
+          const res = g.filter((r) => roleOf(r, c) === "reserve");
+          const count = `${act.length} en activo · ${res.length} en reserva`;
+          const body = (act.length ? `<div class="coin-subh">En activo</div>` + act.map((r, i) => row(r, i + 1, false)).join("") : `<div class="empty" style="padding:10px 14px;text-align:left">Hoy ninguno pasó todos los filtros</div>`)
+            + (res.length ? `<div class="coin-subh">Reserva</div>` + res.map((r, i) => row(r, i + 1, true)).join("") : "");
+          return `<div class="coin-h"><b>${c}</b> ${NAMES[c]} <span>${count}</span></div>` + body;
         }).join("")
-      : rows.map((r) => row(r, r.rank)).join("");
+      : rows.map((r) => row(r, r.rank, false)).join("");
     const when = rows[0].ranked_at ? new Date(rows[0].ranked_at * 1000).toLocaleString("es", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
     $("#traders-note").textContent = hl
       ? `Solo BTC, ETH, SOL y XRP · datos públicos de Hyperliquid · elegidos ${when}. Con $5, FOMO cobra ~2% al comprar y ~2% al vender (XRP ~0.5%): si sube menos que eso, la comisión se come la ganancia.`
