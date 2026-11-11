@@ -54,6 +54,22 @@
       if ((a.positions || []).length) t += ` Tienes abiertas: ${a.positions.map((p) => `${p.symbol || p.name} ${p.pct == null ? "" : (p.pct >= 0 ? "+" : "") + p.pct.toFixed(1) + "%"}`).join(", ")}.`;
       return t;
     }
+    const f = a.focus;
+    if (f) {   // v10: one memecoin + its top traders
+      const sy = f.symbol || f.name;
+      if (has("que moneda", "cual moneda", "meme", "pump", "mihao", "moneda")) {
+        const sf = f.safety && f.safety.checks && f.safety.checks.length ? (f.safety.ok ? ` La última revisión de seguridad salió bien (${f.safety.checks.filter((c) => c.ok).length}/${f.safety.checks.length}).` : ` Ojo: la última revisión falló (${f.safety.reason}), así que no aviso compras.`) : "";
+        return `Ahora opero solo ${f.name} (${sy}), una memecoin de Solana${f.mcap ? ` con capitalización de ${big(f.mcap)}` : ""}.${sf} Las memecoins suben y bajan muy rápido.`;
+      }
+      if (has("trader", "quienes", "a quien copio", "copias")) {
+        const tr = ((s && s.traders) || []).filter((r) => (r.bench || "active") === "active");
+        if (!tr.length) return `Todavía estoy eligiendo a los mejores traders de ${sy}.`;
+        return `Sigo a ${tr.length} traders top de ${sy}: ${tr.map((r) => `${r.name || r.label} (${r.pnl_30d >= 0 ? "+" : ""}${big(r.pnl_30d)} en ${sy})`).join(", ")}. Te aviso Comprar cuando la mayoría está dentro y uno compra; Vender cuando la mayoría vende.`;
+      }
+      if (has("comprar")) return `Cuando la mayoría de los traders top de ${sy} tiene la moneda y uno compra, reviso que no sea estafa y te llega Comprar con el monto exacto (ahora $${(a.ticket || 5).toFixed(2)}). Lo tocas y FOMO se abre en ${sy}. Si no lo tocas, no pasa nada.`;
+      if (has("vender", "venta")) return `Cuando la mayoría de los traders top de ${sy} vende, te llega Vender. Lo tocas y vendes el 100% en FOMO. También te aviso si cae mucho (stop) o si sacan la liquidez.`;
+      if (has("presupuesto", "cuanto pongo", "monto")) return `Como es una sola moneda, cada Comprar usa tu saldo menos lo de la comisión: ahora $${(a.ticket || 5).toFixed(2)}. Nunca más que tu saldo.`;
+    }
     if (has("por que", "porque", "quien compro", "compro")) {
       const c = coinIn(q);
       const b = (a.buys || []).filter((x) => !c || x.symbol === c);

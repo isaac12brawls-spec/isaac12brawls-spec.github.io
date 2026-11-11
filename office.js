@@ -80,7 +80,10 @@
       const row = el.querySelector("#tr-row");
       const tr = traders || [];
       const byCoin = tr.some((t) => (t.chosen_for || []).length);
-      const h = byCoin ? ["BTC", "ETH", "SOL", "XRP"].map((c) => `<span class="tr-av coin" title="${c}"><b>${c}</b><i>${tr.filter((t) => !t.paused && (t.chosen_for || []).includes(c)).length}</i></span>`).join("") + `<span class="tr-lbl">${tr.filter((t) => !t.paused).length} traders</span>`
+      const fx = tr.some((t) => t.data_src === "focus");
+      const act = tr.filter((t) => !t.paused && (t.bench || "active") === "active");
+      const h = fx ? act.map((t, i) => `<span class="tr-av" title="${esc(t.name || t.label)}"><b>${i + 1}</b></span>`).join("") + `<span class="tr-lbl">copiando a ${act.length} traders top</span>`
+        : byCoin ? ["BTC", "ETH", "SOL", "XRP"].map((c) => `<span class="tr-av coin" title="${c}"><b>${c}</b><i>${tr.filter((t) => !t.paused && (t.chosen_for || []).includes(c)).length}</i></span>`).join("") + `<span class="tr-lbl">${tr.filter((t) => !t.paused).length} traders</span>`
         : tr.length ? tr.map((t) => `<span class="tr-av ${t.paused ? "off" : ""}" title="${esc(t.label)}"><b>${t.rank}</b></span>`).join("") + `<span class="tr-lbl">copiando a ${tr.filter((t) => !t.paused).length} traders</span>`
         : `<span class="tr-lbl">eligiendo traders…</span>`;
       if (row._h !== h) { row.innerHTML = h; row._h = h; }

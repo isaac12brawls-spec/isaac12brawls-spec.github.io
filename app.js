@@ -219,6 +219,7 @@
     renderAction(st);
     renderPush(); resyncPush();
     renderTicker(d);
+    renderFocus(st);
     renderDeskCard(d);
     renderLogger(d);
     renderStats(d);
@@ -232,10 +233,31 @@
     if (v >= 100) return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return price(v);
   }
+  function big$(v) { return v == null ? "—" : v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1e3 ? "$" + Math.round(v / 1e3) + "K" : "$" + Math.round(v); }
+  function renderFocus(st) {
+    const el = $("#focus-card"); if (!el) return;
+    const f = st.focus;
+    const sub = $("#dash-sub");
+    if (!f) { el.innerHTML = ""; if (sub) sub.textContent = "BTC · ETH · SOL · XRP · práctica → real"; return; }
+    if (sub) sub.textContent = `Solo ${f.symbol || f.name} · copiando a sus mejores traders`;
+    const ch = (f.safety && f.safety.checks) || [];
+    const okN = ch.filter((c) => c.ok).length;
+    const safe = !ch.length ? `<span class="fc-s wait">seguridad: revisando…</span>`
+      : f.safety.ok ? `<span class="fc-s ok">seguridad ${okN}/${ch.length} ✓</span>` : `<span class="fc-s bad">⚠ ${esc(f.safety.reason || "no segura")}</span>`;
+    const team = f.team ? `${f.team_in ?? 0} de ${f.team} traders dentro` : "eligiendo traders…";
+    const h = `<div class="focus-card tap" id="focus-open">
+      <div class="fc-top"><span class="fc-av">${esc((f.symbol || "?")[0])}</span>
+        <span class="fc-nm"><b>${esc(f.name)}</b> <span class="fc-tk">${esc(f.symbol || "")}</span><div class="fc-sub">Capitalización ${big$(f.mcap)} · precio ${tprice(f.price, f.symbol)}</div></span>
+        <a class="fc-go tap" href="${esc(f.url)}" target="_blank" rel="noopener">Ver en FOMO</a></div>
+      <div class="fc-row">${safe}<span class="fc-t">${esc(team)}</span></div>
+      <div class="fc-note">Te aviso Comprar cuando la mayoría de sus traders top esté dentro y uno compre; Vender cuando la mayoría venda. Antes de cada Comprar reviso que no sea estafa.</div>
+    </div>`;
+    if (el._h !== h) { el.innerHTML = h; el._h = h; }
+  }
   function renderTicker(d) {
     const el = $("#ticker"); if (!el) return;
     const rows = (d && d.tickers) || [];
-    if (!rows.length) { el.innerHTML = `<div class="tick empty"><span class="tn">BTC · ETH · SOL · XRP</span><span class="tp">esperando precios…</span></div>`; return; }
+    if (!rows.length) { el.innerHTML = `<div class="tick empty"><span class="tn">${S.state && S.state.focus ? esc(S.state.focus.symbol || "") : "BTC · ETH · SOL · XRP"}</span><span class="tp">esperando precios…</span></div>`; return; }
     el.innerHTML = rows.map((r) => {
       const ch = r.change_pct, cls = ch == null ? "" : ch >= 0 ? "up" : "down";
       const chs = ch == null ? "" : `<span class="tc ${cls}">${ch >= 0 ? "+" : ""}${ch.toFixed(1)}%</span>`;
@@ -299,7 +321,7 @@
     if (!a) {
       const n = (st.traders || []).filter((r) => !r.paused).length;
       const r = st.agents.scanner.ranking;
-      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `Yo manejo tu presupuesto. Tú solo tocas el botón. Te aviso cuando uno de tus ${n} traders compre o venda.` : "No tienes que hacer nada por ahora."}</span></div>`;
+      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `Yo manejo tu presupuesto. Tú solo tocas el botón. ${st.focus ? `Te aviso cuando la mayoría de tus ${n} traders de ${esc(st.focus.symbol || st.focus.name)} compre o venda.` : `Te aviso cuando uno de tus ${n} traders compre o venda.`}` : "No tienes que hacer nada por ahora."}</span></div>`;
     } else {
       const btn = a.kind === "parar"
         ? `<button class="ab parar tap" data-cb="${esc(a.callback)}">Parar</button>`
@@ -320,18 +342,29 @@
     }
     const fol = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(1)} M` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : `${n}`;
     const hl = rows[0].data_src === "hyperliquid";
+    const fx = rows[0].data_src === "focus";
     const roleOf = (r, c) => ((r.bench_for || {})[c]) || r.bench || "active";
     const row = (r, i, reserve) => `<div class="trow tk ${r.paused ? "paused" : ""} ${reserve ? "reserve" : ""}">
         <span class="rk">${i}</span>
         <span class="mid"><div class="t">${esc(r.name || r.label)}${r.handle ? ` <span class="hd">@${esc(r.handle)}</span>` : ""}</div>
-        <div class="s">${r.paused ? "Apagado" : hl
+        <div class="s">${r.paused ? "Apagado" : fx
+          ? `${r.trades ?? 0} operaciones en ${esc(r.days != null ? String(r.days) : "?")} días · ${r.win_rate != null ? `${Math.round(r.win_rate * 100)}% de sus ventas con ganancia` : "todavía no vende"}${r.holding_usd ? ` · tiene ${usd(r.holding_usd, 0)}` : ""}`
+          : hl
           ? `opera ${esc((r.coins || []).join(" · ") || "—")} · acierta ${Math.round((r.win_rate || 0) * 100)}% (${r.wins ?? 0} de ${r.closes ?? 0})`
           : `${r.trades ?? "?"} operaciones · ${r.days ? Math.round(r.days) : "?"} días · acierta ${Math.round(((r.kol_win_rate_30d ?? r.win_rate) || 0) * 100)}%`}</div>
         ${r.why ? `<div class="why">${esc(r.why)}</div>` : ""}</span>
-        <span class="r ${(r.pnl_30d || 0) >= 0 ? "up" : "down"}">${(r.pnl_30d || 0) >= 0 ? "+" : ""}${usd(r.pnl_30d, 0)}<small>30 días${r.pnl_7d != null ? ` · sem. ${(r.pnl_7d) >= 0 ? "+" : ""}${usd(r.pnl_7d, 0)}` : ""}</small></span>
+        <span class="r ${(r.pnl_30d || 0) >= 0 ? "up" : "down"}">${(r.pnl_30d || 0) >= 0 ? "+" : ""}${usd(r.pnl_30d, 0)}<small>${fx ? `en ${esc((st.focus && st.focus.symbol) || "la moneda")}` : "30 días"}${r.pnl_7d != null ? ` · sem. ${(r.pnl_7d) >= 0 ? "+" : ""}${usd(r.pnl_7d, 0)}` : ""}</small></span>
         <button class="swwrap tap" data-trader="${esc(r.wallet)}" data-tp="${r.paused ? 1 : 0}" aria-label="pausar o seguir"><span class="sw ${r.paused ? "" : "on"}"></span></button></div>`;
     const NAMES = { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", XRP: "XRP" };
-    $("#traders").innerHTML = hl
+    const fsym = (st.focus && (st.focus.symbol || st.focus.name)) || "la moneda";
+    $("#traders").innerHTML = fx
+      ? (() => {
+          const act = rows.filter((r) => roleOf(r, "FOCUS") === "active"), res = rows.filter((r) => roleOf(r, "FOCUS") === "reserve");
+          return `<div class="coin-h"><b>${esc(fsym)}</b> ${esc((st.focus && st.focus.name) || "")} <span>${act.length} en activo · ${res.length} en reserva</span></div>`
+            + (act.length ? `<div class="coin-subh">En activo</div>` + act.map((r, i) => row(r, i + 1, false)).join("") : "")
+            + (res.length ? `<div class="coin-subh">Reserva</div>` + res.map((r, i) => row(r, i + 1, true)).join("") : "");
+        })()
+      : hl
       ? ["BTC", "ETH", "SOL", "XRP"].map((c) => {
           const g = rows.filter((r) => (r.chosen_for || []).includes(c));
           const act = g.filter((r) => roleOf(r, c) === "active");
@@ -343,7 +376,9 @@
         }).join("")
       : rows.map((r) => row(r, r.rank, false)).join("");
     const when = rows[0].ranked_at ? new Date(rows[0].ranked_at * 1000).toLocaleString("es", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
-    $("#traders-note").textContent = hl
+    $("#traders-note").textContent = fx
+      ? `Solo ${fsym} · sus mejores traders según la blockchain de Solana (ganancia real en esta moneda, sin bots, sin el creador, sin insiders) · elegidos ${when}. Comisión ~2% al comprar y ~2% al vender.`
+      : hl
       ? `Solo BTC, ETH, SOL y XRP · datos públicos de Hyperliquid · elegidos ${when}. Con $5, FOMO cobra ~2% al comprar y ~2% al vender (XRP ~0.5%): si sube menos que eso, la comisión se come la ganancia.`
       : rows[0].data_src === "kolscan"
       ? `Traders conocidos · datos de kolscan.io (30 días) y de la blockchain · seguidores de X · elegidos ${when}`
@@ -375,14 +410,14 @@
     if (name === "auditor") {
       const L = a.last ? a.last.layers : [];
       const strips = LAYER_SHORT.map((s, i) => { const x = L[i]; const cls = !x ? "" : x.pass === true ? "ok" : x.pass === false ? "bad" : ""; return `<div class="strip ${cls}">${s}</div>`; }).join("");
-      const live = a.live && a.live.state ? a.live.state : a.last ? (a.last.passed ? "8/8 → Executor" : a.last.reason || "revisando...") : "BTC, ETH, SOL y XRP no necesitan revisión anti-estafa";
+      const live = a.live && a.live.state ? a.live.state : a.last ? (a.last.passed ? "8/8 → Executor" : a.last.reason || "revisando...") : (st.focus ? `Antes de cada Comprar de ${st.focus.symbol || st.focus.name} reviso: mint, freeze, liquidez, top 10, dev` : "BTC, ETH, SOL y XRP no necesitan revisión anti-estafa");
       return `${head}<div class="big">${a.count} revisadas</div><div class="lbl">${a.last ? esc(a.last.name) : ""}</div><div class="strips">${strips}</div>
         <div style="margin-top:12px;font-size:15px">${esc(live)}</div><div class="card-foot">${a.rejected} rechazadas</div>`;
     }
     if (name === "analyst") {
       const l = a.last;
       return `${head}<div class="big" style="color:var(--yellow)">Puntuando</div><div class="lbl">Analista (copia) · ${a.count} puntuadas</div>
-        <canvas class="ring" id="ring"></canvas><div class="card-foot" style="text-align:center">${l ? esc(l.name) + " · " + (l.pass ? "aprobada" : esc(l.reason)) : "Las copias de BTC, ETH, SOL y XRP van directo al Executor"}</div>`;
+        <canvas class="ring" id="ring"></canvas><div class="card-foot" style="text-align:center">${l ? esc(l.name) + " · " + (l.pass ? "aprobada" : esc(l.reason)) : (st.focus ? "Si pasa la revisión, va directo al Executor" : "Las copias de BTC, ETH, SOL y XRP van directo al Executor")}</div>`;
     }
     if (name === "executor") {
       const l = a.last;
@@ -471,9 +506,9 @@
       </div>
       ${acc.coins_on ? `<div class="group-h">Lo que copio</div><div class="group">
         <div class="cell"><span class="k">Modo</span><span class="v">${acc.auto_coins && acc.auto_amount ? "Automático" : acc.auto_coins || acc.auto_amount ? "Mixto" : "Manual"}</span></div>
-        <div class="cell"><span class="k">Monedas${acc.auto_coins ? " (las elijo yo)" : ""}</span><span class="v">${["BTC", "ETH", "SOL", "XRP"].map((c) => `<span class="coin-pill ${acc.coins_on.includes(c) ? "on" : ""}">${c}</span>`).join("")}</span></div>
+        <div class="cell"><span class="k">Monedas${acc.auto_coins ? " (las elijo yo)" : ""}</span><span class="v">${acc.focus ? `<span class="coin-pill on">${esc(acc.focus.symbol || acc.focus.name)}</span>` : ["BTC", "ETH", "SOL", "XRP"].map((c) => `<span class="coin-pill ${acc.coins_on.includes(c) ? "on" : ""}">${c}</span>`).join("")}</span></div>
         <div class="cell"><span class="k">Monto por compra${acc.auto_amount ? " (lo elijo yo)" : ""}</span><span class="v">${usd(acc.ticket_usd)}</span></div>
-        <div class="cell"><span class="k" style="color:var(--sec);font-size:13px">Yo manejo tu presupuesto: reparto tu saldo en ${acc.max_open || 2} compras y guardo para la comisión. Si quieres elegir tú, cámbialo en Telegram: /monedas y /monto (o /monto auto para volver). Mínimo $5, nunca más que tu saldo. Máximo ${acc.max_open || 2} monedas a la vez.</span></div>
+        <div class="cell"><span class="k" style="color:var(--sec);font-size:13px">${acc.focus ? `Yo manejo tu presupuesto: una sola moneda, así que cada Comprar usa tu saldo menos lo de la comisión (nunca más que tu saldo).` : `Yo manejo tu presupuesto: reparto tu saldo en ${acc.max_open || 2} compras y guardo para la comisión.`} Si quieres elegir tú, cámbialo en Telegram: /monedas y /monto (o /monto auto para volver). Mínimo $5, nunca más que tu saldo. Máximo ${acc.max_open || 2} monedas a la vez.</span></div>
       </div>` : ""}
       <div class="group">
         <a class="cell tap" href="${esc(acc.profile_url)}" target="_blank" rel="noopener"><span class="k">Tu perfil de FOMO</span><span class="v">@${esc(acc.fomo_handle)}</span><span class="chev">›</span></a>
@@ -647,6 +682,20 @@
     if (t.id === "seguir") { try { const r = await post("/seguir"); toast(r.message); await refresh(); } catch (err) { toast(err.message); } return; }
     if (t.id === "rerank-info") {
       const rep = (await get("/traders").catch(() => ({ report: null }))).report;
+      const fo = S.state && S.state.focus;
+      if (fo) {
+        const sy = esc(fo.symbol || fo.name);
+        sheet(`<div class="sh-t">¿Cómo elijo a los traders?</div><div style="color:var(--sec);font-size:14px;line-height:1.45">
+          Ahora opero una sola memecoin: <b>${esc(fo.name)} (${sy})</b>.<br><br>
+          1. Busco quién compró y vendió ${sy} con dinero de verdad (las últimas operaciones grandes y los que más tienen).<br>
+          2. Leo en la blockchain de Solana cada compra y venta de ${sy} de cada uno: cuánto ganó vendiendo, cuánto tiene sin vender y cuántas veces vendió con ganancia.<br>
+          3. Fuera el creador, los bots, los que recibieron monedas gratis (insiders) y los que pierden.<br>
+          4. Me quedo con ${rep && rep.chosen ? rep.chosen : 5} en activo y ${rep && rep.reserve != null ? rep.reserve : 3} de reserva. Si uno deja de operar, entra uno de la reserva.<br><br>
+          Te aviso <b>Comprar</b> cuando la mayoría de los activos tiene ${sy} y uno compra, y antes reviso que no sea estafa (mint, freeze, liquidez bloqueada, top 10 y que el creador no venda). Te aviso <b>Vender</b> cuando la mayoría ya vendió.
+          ${rep ? `<br><br>Última vez: ${rep.candidates ?? 0} wallets revisadas · ${rep.studied ?? 0} con datos · ${rep.chosen ?? 0} elegidos.` : ""}
+          <br><br>Las memecoins suben y bajan muy rápido. Copiar traders también pierde.</div>`);
+        return;
+      }
       sheet(`<div class="sh-t">¿Cómo elijo a los traders?</div><div style="color:var(--sec);font-size:14px;line-height:1.45">
         Solo copio criptos establecidas: Bitcoin, Ethereum, Solana y XRP. Nada de memecoins.<br><br>
         1. Leo el ranking público de Hyperliquid, un exchange donde se ve todo lo que hace cada trader.<br>

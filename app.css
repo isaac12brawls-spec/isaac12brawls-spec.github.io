@@ -479,3 +479,17 @@ details.adv summary::-webkit-details-marker{display:none}
 .pushcard .pc-s{color:var(--sec);font-size:12px;margin-top:2px}
 .pushcard .pc-btn{background:var(--green);color:#04120a;font-weight:700;font-size:14px;border-radius:999px;padding:9px 14px;white-space:nowrap}
 .pushcard .pc-btn[disabled]{opacity:.6}
+/* v10 · one memecoin card (same dark/neon look as the desk card) */
+.focus-card{margin:10px 0 2px;padding:12px 14px;border-radius:16px;background:#0b1511;border:1px solid rgba(61,255,136,.18)}
+.focus-card .fc-top{display:flex;align-items:center;gap:10px}
+.focus-card .fc-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;color:#04140c;background:#3dff88;flex:none}
+.focus-card .fc-nm{flex:1;min-width:0}
+.focus-card .fc-nm b{font-size:15px}
+.focus-card .fc-tk{font-size:12px;color:#3dff88;font-weight:700}
+.focus-card .fc-sub{font-size:12px;color:#9aaba4;font-variant-numeric:tabular-nums}
+.focus-card .fc-go{font-size:12px;font-weight:700;color:#04140c;background:#3dff88;border-radius:999px;padding:6px 10px;text-decoration:none;flex:none}
+.focus-card .fc-row{display:flex;justify-content:space-between;gap:8px;margin-top:9px;font-size:12px}
+.focus-card .fc-s{font-weight:700}
+.focus-card .fc-s.ok{color:#3dff88}.focus-card .fc-s.bad{color:#ff5a6a}.focus-card .fc-s.wait{color:#9aaba4}
+.focus-card .fc-t{color:#d6e2dd}
+.focus-card .fc-note{margin-top:7px;font-size:11.5px;line-height:1.35;color:#7f918a}
