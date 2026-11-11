@@ -719,8 +719,7 @@
   document.addEventListener("input", (e) => { const t = e.target; if (t.dataset.slide) { const n = $(`[data-num="${t.dataset.slide}"]`); if (n) n.value = (+t.value).toFixed(t.step == 1 ? 0 : 2); } });
 
   // ---------- web push: ONLY majority Comprar/Vender alerts ----------
-  // plan G: the desk's current tunnel URL + VAPID key ride inside the encrypted bundle; the page posts its subscription
-  // there as a CORS "simple request" (text/plain body carrying the token: no preflight, no custom headers).
+  // plan G: VAPID key + relay topic ride inside the encrypted bundle; the subscription is sent encrypted (registerSub).
   const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   async function subId(endpoint) {
     const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint)));
@@ -734,15 +733,23 @@
   async function registerSub(sub) {
     const id = await subId(sub.endpoint);
     if (PLAN === "G") {
+      // the free tunnel shows browsers a "Caution" page (even for CORS), so the subscription goes through an encrypted
+      // mailbox: AES-GCM(key from the #t= token) posted to the secret ntfy.sh topic named in the bundle; the desk reads it.
       const p = await pushInfo();
-      if (!p.api) throw new Error("El escritorio se está reconectando. Intenta otra vez en 2 minutos.");
+      if (!p.relay || !p.topic) throw new Error("Los avisos todavía no están listos en el escritorio.");
+      const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(TOKEN), "PBKDF2", false, ["deriveKey"]);
+      const key = await crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: new TextEncoder().encode("grok-desk-push-v1"), iterations: 200000 },
+        base, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: new TextEncoder().encode("desk-push-v1") }, key,
+        new TextEncoder().encode(JSON.stringify({ op: "add", sub: sub.toJSON(), ts: Date.now() }))));
+      const enc = (u) => btoa(String.fromCharCode(...u));
       let r;
       try {
-        r = await fetch(p.api.replace(/\/$/, "") + "/api/push_g", { method: "POST", headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify({ t: TOKEN, op: "add", sub: sub.toJSON() }), cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" });
-      } catch (e) { throw new Error("No pude hablar con el escritorio. Intenta otra vez en 2 minutos."); }
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.ok || j.id !== id) throw new Error("El escritorio no aceptó el aviso. Intenta otra vez en 2 minutos.");
+        r = await fetch(p.relay.replace(/\/$/, "") + "/" + p.topic, { method: "POST", headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ v: 1, iv: enc(iv), ct: enc(ct) }), cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" });
+      } catch (e) { throw new Error("Sin conexión. Intenta otra vez en un minuto."); }
+      if (!r.ok) throw new Error("No se pudo enviar. Intenta otra vez en un minuto.");
     } else if (PLAN === "A") {
       await post("/push", sub.toJSON());
     } else throw new Error("Desde este enlace no se pueden activar avisos.");
@@ -757,7 +764,7 @@
     const subs = PLAN === "G" && G.bundle && G.bundle.push ? G.bundle.push.subs : null;
     if (!id) return "off";
     if (!subs || subs.includes(id) || Date.now() - at < 5 * 60000) return "on";
-    return "lost";   // the desk does not have it (tunnel was down when she tapped, or the push service expired it)
+    return "lost";   // the desk does not have it (relay message lost/expired, or the push service dropped it)
   }
   let pushBusy = false;
   async function enablePush() {
@@ -781,14 +788,14 @@
   }
   let lastResync = 0;
   async function resyncPush() {   // silent: re-register when the desk lost it (no taps needed once permission is given)
-    if (pushState() !== "lost" || Date.now() - lastResync < 60000 || pushBusy) return;
+    if (pushState() !== "lost" || Date.now() - lastResync < 5 * 60000 || pushBusy) return;
     lastResync = Date.now();
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (!sub) { localStorage.removeItem("desk_push_id"); return renderPush(); }
       await registerSub(sub); renderPush();
-    } catch (e) { /* tunnel down: retry next minute */ }
+    } catch (e) { /* offline: retry in 5 minutes */ }
   }
   function renderPush() {
     const el = $("#push-slot"); if (!el) return;
