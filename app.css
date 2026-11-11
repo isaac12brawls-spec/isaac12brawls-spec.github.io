@@ -347,3 +347,5 @@ details.adv summary::-webkit-details-marker{display:none}
 #v-home .bottom-pad{height:calc(var(--tabh) + 96px + env(safe-area-inset-bottom))}
 .coin-pill{display:inline-block;margin-left:4px;padding:2px 7px;border-radius:9px;font-size:12px;background:#2c2c2e;color:var(--ter);text-decoration:line-through}
 .coin-pill.on{background:rgba(0,211,90,.16);color:var(--green);text-decoration:none}
+/* keep the Home action card clear of the Grok helper bubble */
+#v-home #action{padding-right:58px}
