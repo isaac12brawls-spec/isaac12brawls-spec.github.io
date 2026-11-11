@@ -202,7 +202,7 @@
     const t = $("#today");
     if (st.focus) {
       const tp = d.today_pct || 0;
-      t.textContent = pnl ? (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(tp) + ") desde que opero " + (st.focus.symbol || st.focus.name) : "Todavía sin ganancias ni pérdidas";
+      t.textContent = pnl ? (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(tp) + ") desde que opero " + (st.focus.symbol || st.focus.name) : "Sin ganancias ni pérdidas aún";
       t.className = "num " + (pnl > 0 ? "up" : pnl < 0 ? "down" : "flat");
     } else { t.textContent = (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(st.today_pct) + ")"; t.className = "num " + (st.today_pct >= 0 ? "up" : "down"); }
     $("#mult").textContent = (d.multiplier != null ? d.multiplier : st.multiplier).toFixed(2) + "×";
@@ -283,7 +283,7 @@
         <div><span>Seguridad</span>${safe}</div>
         <div><span>Traders dentro</span><b class="${maj ? "ok" : ""}">${f.team ? `${f.team_in ?? 0} de ${f.team}` : "…"}</b></div>
       </div>
-      ${chips ? `<div class="fc-chips">${chips}</div>` : ""}
+      ${chips ? `<div class="fc-chips">${chips}<span class="fc-leg">verde = tiene ${esc(f.symbol || f.name)}</span></div>` : ""}
       ${actH}
     </div>`;
     if (el._h !== h) { el.innerHTML = h; el._h = h; }
@@ -312,7 +312,8 @@
     const rows = (d && d.agents) || [];
     const scanned = (d && d.scanned) || 0, traded = (d && d.traded) || 0, n = rows.length || 6;
     const sc = scanned >= 1000 ? (scanned / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(scanned);
-    el.innerHTML = `<div class="desk-h">Desk · ${n} agentes<span class="r">${sc} revisados · ${traded} copias</span></div>` +
+    const fo = S.state && S.state.focus;
+    el.innerHTML = `<div class="desk-h">Desk · ${n} agentes<span class="r">${fo ? `${scanned} movimientos · ${traded} avisos Comprar` : `${sc} revisados · ${traded} copias`}</span></div>` +
       (rows.length ? rows.map((a) => `<div class="arow" data-agent="${esc(a.id)}">
         <span class="aico ${esc(a.id)}">${AICO[a.id] || ""}</span>
         <span><div class="anm">${esc(a.name)}</div><div class="asub">${esc(a.sub || "")}</div></span>
@@ -422,7 +423,7 @@
   function renderChart() {
     const c = S.chart, st = S.state; if (!c || !st) return;
     const empty = !st.has_trades;
-    const ce = $("#chart-empty"); if (ce) { ce.hidden = !empty; ce.style.top = ""; }
+    const ce = $("#chart-empty"); if (ce) { ce.hidden = !empty || !!st.focus; ce.style.top = ""; }
     const pts = (c.points && c.points.length) ? c.points : [];
     if (window.DeskChart && DeskChart.equity) DeskChart.equity($("#home-chart"), { points: pts, start_value: c.start_value });
     else DeskChart.line($("#home-chart"), { points: pts, marks: [], start_value: c.start_value });
