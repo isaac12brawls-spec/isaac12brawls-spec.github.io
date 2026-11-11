@@ -321,7 +321,7 @@
     if (!a) {
       const n = (st.traders || []).filter((r) => !r.paused).length;
       const r = st.agents.scanner.ranking;
-      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `Yo manejo tu presupuesto. Tú solo tocas el botón. ${st.focus ? `Te aviso cuando la mayoría de tus ${n} traders de ${esc(st.focus.symbol || st.focus.name)} compre o venda.` : `Te aviso cuando uno de tus ${n} traders compre o venda.`}` : "No tienes que hacer nada por ahora."}</span></div>`;
+      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `Yo manejo tu presupuesto. Tú solo tocas el botón. ${st.focus ? `Te aviso cuando la mayoría de tus ${st.focus.team || n} traders top de ${esc(st.focus.symbol || st.focus.name)} compre o venda.` : `Te aviso cuando uno de tus ${n} traders compre o venda.`}` : "No tienes que hacer nada por ahora."}</span></div>`;
     } else {
       const btn = a.kind === "parar"
         ? `<button class="ab parar tap" data-cb="${esc(a.callback)}">Parar</button>`
