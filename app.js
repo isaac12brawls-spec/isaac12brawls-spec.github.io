@@ -217,6 +217,7 @@
     if (window.DeskOffice && $("#office")) DeskOffice.render($("#office"), st.office, st.traders);
     renderTraders(st);
     renderAction(st);
+    renderPush(); resyncPush();
     renderTicker(d);
     renderDeskCard(d);
     renderLogger(d);
@@ -481,7 +482,7 @@
       <div class="group">
         <div class="cell"><span class="k">Telegram</span><span class="v">${acc.telegram.connected ? "conectado" : "sin conectar"}</span></div>
         <button class="cell tap" id="testpush" ${ro ? "disabled" : ""}><span class="k" style="color:var(--blue)">Mandar aviso de prueba</span></button>
-        ${acc.webpush.available ? (standalone ? `<button class="cell tap" id="enablepush"><span class="k" style="color:var(--blue)">Activar notificaciones</span></button>` : `<div class="cell"><span class="k" style="color:var(--sec);font-size:13px">Agrega la app a tu pantalla de inicio para activar notificaciones</span></div>`) : `<div class="cell"><span class="k" style="color:var(--sec);font-size:13px">${esc(acc.webpush.note)}</span></div>`}
+        ${pushSupported() && (PLAN === "G" || acc.webpush.available) ? `<button class="cell tap" id="enablepush"><span class="k" style="color:var(--blue)">${pushState() === "on" ? "Avisos al teléfono: activados ✓" : "Activar avisos"}</span></button>` : ""}
       </div>
       <details class="adv" ${S.advOpen ? "open" : ""}><summary class="details-btn tap">Ajustes avanzados <span class="chev">›</span></summary>
       ${ro ? `<div class="group-h">Desde este enlace solo se mira. Para cambiar algo, escríbele al bot de Telegram, por ejemplo «parar», «seguir» o «set stop to -8%».</div>` : ""}
@@ -717,19 +718,85 @@
   });
   document.addEventListener("input", (e) => { const t = e.target; if (t.dataset.slide) { const n = $(`[data-num="${t.dataset.slide}"]`); if (n) n.value = (+t.value).toFixed(t.step == 1 ? 0 : 2); } });
 
-  // ---------- web push (home screen only) ----------
-  async function enablePush() {
-    try {
-      const acc = await get("/account");
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") return toast("Notifications not allowed");
-      const key = acc.webpush.vapid_public;
-      const raw = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((key.length + 3) % 4)), (c) => c.charCodeAt(0));
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+  // ---------- web push: ONLY majority Comprar/Vender alerts ----------
+  // plan G: the desk's current tunnel URL + VAPID key ride inside the encrypted bundle; the page posts its subscription
+  // there as a CORS "simple request" (text/plain body carrying the token: no preflight, no custom headers).
+  const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  async function subId(endpoint) {
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint)));
+    return Array.from(h).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+  }
+  async function pushInfo() {
+    if (PLAN === "G") return (await gBundle()).push || {};
+    const acc = await get("/account");
+    return { api: null, vapid: acc.webpush && acc.webpush.vapid_public, subs: null };
+  }
+  async function registerSub(sub) {
+    const id = await subId(sub.endpoint);
+    if (PLAN === "G") {
+      const p = await pushInfo();
+      if (!p.api) throw new Error("El escritorio se está reconectando. Intenta otra vez en 2 minutos.");
+      let r;
+      try {
+        r = await fetch(p.api.replace(/\/$/, "") + "/api/push_g", { method: "POST", headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ t: TOKEN, op: "add", sub: sub.toJSON() }), cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" });
+      } catch (e) { throw new Error("No pude hablar con el escritorio. Intenta otra vez en 2 minutos."); }
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok || j.id !== id) throw new Error("El escritorio no aceptó el aviso. Intenta otra vez en 2 minutos.");
+    } else if (PLAN === "A") {
       await post("/push", sub.toJSON());
-      toast("Notifications on");
-    } catch (err) { toast("Couldn't enable: " + err.message); }
+    } else throw new Error("Desde este enlace no se pueden activar avisos.");
+    localStorage.setItem("desk_push_id", id); localStorage.setItem("desk_push_at", String(Date.now())); localStorage.setItem("desk_push_want", "1");
+    return id;
+  }
+  function pushState() {
+    if (!pushSupported()) return "unsupported";
+    if (Notification.permission === "denied") return "denied";
+    if (Notification.permission !== "granted" || localStorage.getItem("desk_push_want") !== "1") return "off";
+    const id = localStorage.getItem("desk_push_id"), at = +localStorage.getItem("desk_push_at") || 0;
+    const subs = PLAN === "G" && G.bundle && G.bundle.push ? G.bundle.push.subs : null;
+    if (!id) return "off";
+    if (!subs || subs.includes(id) || Date.now() - at < 5 * 60000) return "on";
+    return "lost";   // the desk does not have it (tunnel was down when she tapped, or the push service expired it)
+  }
+  let pushBusy = false;
+  async function enablePush() {
+    if (pushBusy) return; pushBusy = true; renderPush();
+    try {
+      if (!pushSupported()) throw new Error("Este navegador no permite avisos. Abre la página en Google Chrome.");
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") throw new Error("No diste permiso. Puedes activarlo en Chrome → Ajustes → Notificaciones.");
+      await navigator.serviceWorker.register("/sw.js");
+      const reg = await navigator.serviceWorker.ready;
+      const p = await pushInfo();
+      if (!p.vapid) throw new Error("Los avisos todavía no están listos en el escritorio.");
+      const raw = Uint8Array.from(atob(p.vapid.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((p.vapid.length + 3) % 4)), (c) => c.charCodeAt(0));
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+      await registerSub(sub);
+      reg.showNotification("Avisos activados", { body: "Te aviso solo cuando la mayoría de los traders compre o venda.", icon: "/icons/icon-192.png", badge: "/icons/badge-96.png", tag: "desk-push-on" }).catch(() => {});
+      toast("Avisos activados ✓");
+    } catch (err) { toast(err.message || "No se pudieron activar los avisos"); }
+    finally { pushBusy = false; renderPush(); }
+  }
+  let lastResync = 0;
+  async function resyncPush() {   // silent: re-register when the desk lost it (no taps needed once permission is given)
+    if (pushState() !== "lost" || Date.now() - lastResync < 60000 || pushBusy) return;
+    lastResync = Date.now();
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) { localStorage.removeItem("desk_push_id"); return renderPush(); }
+      await registerSub(sub); renderPush();
+    } catch (e) { /* tunnel down: retry next minute */ }
+  }
+  function renderPush() {
+    const el = $("#push-slot"); if (!el) return;
+    if (PLAN !== "G" && PLAN !== "A") { el.innerHTML = ""; return; }
+    const st = pushState();
+    if (st === "on" || st === "unsupported" || (st === "lost" && localStorage.getItem("desk_push_id"))) { el.innerHTML = ""; return; }
+    if (st === "denied") { el.innerHTML = `<div class="pushcard"><div class="pc-t">Avisos bloqueados</div><div class="pc-s">Para recibirlos: Chrome → ⋮ → Configuración → Notificaciones → permite esta página.</div></div>`; return; }
+    el.innerHTML = `<div class="pushcard"><div class="pc-txt"><div class="pc-t">Avisos al teléfono</div><div class="pc-s">Solo cuando la mayoría compre o venda</div></div><button class="pc-btn tap" id="enablepush" ${pushBusy ? "disabled" : ""}>${pushBusy ? "Activando…" : "Activar avisos"}</button></div>`;
   }
 
   // ---------- refresh + live stream ----------
