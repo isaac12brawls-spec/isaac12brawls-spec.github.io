@@ -1,4 +1,4 @@
-// Grok Bot desk app. Plain JS, no framework, no build step.
+// Grok Desk Trading app. Plain JS, no framework, no build step.
 (() => {
   "use strict";
   const $ = (s, el = document) => el.querySelector(s);
@@ -125,6 +125,7 @@
 
   // ---------- state ----------
   const S = { state: null, chart: null, range: "LIVE", tab: "home", lastOk: 0, online: true, retryIn: 0, coin: null, audit: null, activityRows: [], nextBefore: null };
+  window.DeskApp = { state: () => S.state };   // read-only view for the local Grok helper (assistant.js)
 
   function showAuthWall() { $("#authwall").hidden = false; }
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2600); }
@@ -204,7 +205,7 @@
     if (!a) {
       const n = (st.traders || []).filter((r) => !r.paused).length;
       const r = st.agents.scanner.ranking;
-      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `No tienes que hacer nada. Te aviso cuando uno de tus ${n} traders compre o venda.` : "No tienes que hacer nada por ahora."}</span></div>`;
+      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `Yo manejo tu presupuesto. Tú solo tocas el botón. Te aviso cuando uno de tus ${n} traders compre o venda.` : "No tienes que hacer nada por ahora."}</span></div>`;
     } else {
       const btn = a.kind === "parar"
         ? `<button class="ab parar tap" data-cb="${esc(a.callback)}">Parar</button>`
@@ -224,15 +225,28 @@
       return;
     }
     const fol = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(1)} M` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : `${n}`;
-    $("#traders").innerHTML = rows.map((r) => `<div class="trow tk ${r.paused ? "paused" : ""}">
-        <span class="rk">${r.rank}</span>
+    const hl = rows[0].data_src === "hyperliquid";
+    const row = (r, i) => `<div class="trow tk ${r.paused ? "paused" : ""}">
+        <span class="rk">${i}</span>
         <span class="mid"><div class="t">${esc(r.name || r.label)}${r.handle ? ` <span class="hd">@${esc(r.handle)}</span>` : ""}</div>
-        <div class="s">${r.paused ? "Apagado" : `${r.trades ?? "?"} operaciones · ${r.days ? Math.round(r.days) : "?"} días · acierta ${Math.round(((r.kol_win_rate_30d ?? r.win_rate) || 0) * 100)}%`}</div>
+        <div class="s">${r.paused ? "Apagado" : hl
+          ? `opera ${esc((r.coins || []).join(" · ") || "—")} · acierta ${Math.round((r.win_rate || 0) * 100)}% (${r.wins ?? 0} de ${r.closes ?? 0})`
+          : `${r.trades ?? "?"} operaciones · ${r.days ? Math.round(r.days) : "?"} días · acierta ${Math.round(((r.kol_win_rate_30d ?? r.win_rate) || 0) * 100)}%`}</div>
         ${r.why ? `<div class="why">${esc(r.why)}</div>` : ""}</span>
         <span class="r ${(r.pnl_30d || 0) >= 0 ? "up" : "down"}">${(r.pnl_30d || 0) >= 0 ? "+" : ""}${usd(r.pnl_30d, 0)}<small>30 días</small></span>
-        <button class="swwrap tap" data-trader="${esc(r.wallet)}" data-tp="${r.paused ? 1 : 0}" aria-label="pausar o seguir"><span class="sw ${r.paused ? "" : "on"}"></span></button></div>`).join("");
+        <button class="swwrap tap" data-trader="${esc(r.wallet)}" data-tp="${r.paused ? 1 : 0}" aria-label="pausar o seguir"><span class="sw ${r.paused ? "" : "on"}"></span></button></div>`;
+    const NAMES = { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", XRP: "XRP" };
+    $("#traders").innerHTML = hl
+      ? ["BTC", "ETH", "SOL", "XRP"].map((c) => {
+          const g = rows.filter((r) => (r.chosen_for || []).includes(c));
+          return `<div class="coin-h"><b>${c}</b> ${NAMES[c]} <span>${g.length} trader${g.length === 1 ? "" : "s"}</span></div>` +
+            (g.length ? g.map((r, i) => row(r, i + 1)).join("") : `<div class="empty" style="padding:10px 14px;text-align:left">Hoy ninguno pasó todos los filtros</div>`);
+        }).join("")
+      : rows.map((r) => row(r, r.rank)).join("");
     const when = rows[0].ranked_at ? new Date(rows[0].ranked_at * 1000).toLocaleString("es", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
-    $("#traders-note").textContent = rows[0].data_src === "kolscan"
+    $("#traders-note").textContent = hl
+      ? `Solo BTC, ETH, SOL y XRP · datos públicos de Hyperliquid · elegidos ${when}. Con $5, FOMO cobra ~2% al comprar y ~2% al vender (XRP ~0.5%): si sube menos que eso, la comisión se come la ganancia.`
+      : rows[0].data_src === "kolscan"
       ? `Traders conocidos · datos de kolscan.io (30 días) y de la blockchain · seguidores de X · elegidos ${when}`
       : `Ganancia real de su historial reciente · elegidos ${when} · cada día los vuelvo a elegir`;
   }
@@ -261,14 +275,14 @@
     if (name === "auditor") {
       const L = a.last ? a.last.layers : [];
       const strips = LAYER_SHORT.map((s, i) => { const x = L[i]; const cls = !x ? "" : x.pass === true ? "ok" : x.pass === false ? "bad" : ""; return `<div class="strip ${cls}">${s}</div>`; }).join("");
-      const live = a.live && a.live.state ? a.live.state : a.last ? (a.last.passed ? "8/8 → Executor" : a.last.reason || "revisando...") : "Todavía no revisó ninguna moneda";
+      const live = a.live && a.live.state ? a.live.state : a.last ? (a.last.passed ? "8/8 → Executor" : a.last.reason || "revisando...") : "BTC, ETH, SOL y XRP no necesitan revisión anti-estafa";
       return `${head}<div class="big">${a.count} revisadas</div><div class="lbl">${a.last ? esc(a.last.name) : ""}</div><div class="strips">${strips}</div>
         <div style="margin-top:12px;font-size:15px">${esc(live)}</div><div class="card-foot">${a.rejected} rechazadas</div>`;
     }
     if (name === "analyst") {
       const l = a.last;
       return `${head}<div class="big" style="color:var(--yellow)">Puntuando</div><div class="lbl">Analista (copia) · ${a.count} puntuadas</div>
-        <canvas class="ring" id="ring"></canvas><div class="card-foot" style="text-align:center">${l ? esc(l.name) + " · " + (l.pass ? "aprobada" : esc(l.reason)) : "Nada puntuado todavía"}</div>`;
+        <canvas class="ring" id="ring"></canvas><div class="card-foot" style="text-align:center">${l ? esc(l.name) + " · " + (l.pass ? "aprobada" : esc(l.reason)) : "Las copias de BTC, ETH, SOL y XRP van directo al Executor"}</div>`;
     }
     if (name === "executor") {
       const l = a.last;
@@ -355,6 +369,12 @@
         ${ro ? `<div class="cell"><span class="k" style="color:var(--sec);font-size:13px">Este enlace es para mirar. Para cambiar ajustes, pausar o parar, escríbele al bot de Telegram.</span></div>` : ""}
         <div class="cell"><span class="k" style="color:${acc.ticket.level === "skip" ? "var(--red)" : acc.ticket.level === "bump" ? "var(--orange)" : "var(--sec)"};font-size:13px">${esc(acc.ticket.message)}</span></div>
       </div>
+      ${acc.coins_on ? `<div class="group-h">Lo que copio</div><div class="group">
+        <div class="cell"><span class="k">Modo</span><span class="v">${acc.auto_coins && acc.auto_amount ? "Automático" : acc.auto_coins || acc.auto_amount ? "Mixto" : "Manual"}</span></div>
+        <div class="cell"><span class="k">Monedas${acc.auto_coins ? " (las elijo yo)" : ""}</span><span class="v">${["BTC", "ETH", "SOL", "XRP"].map((c) => `<span class="coin-pill ${acc.coins_on.includes(c) ? "on" : ""}">${c}</span>`).join("")}</span></div>
+        <div class="cell"><span class="k">Monto por compra${acc.auto_amount ? " (lo elijo yo)" : ""}</span><span class="v">${usd(acc.ticket_usd)}</span></div>
+        <div class="cell"><span class="k" style="color:var(--sec);font-size:13px">Yo manejo tu presupuesto: reparto tu saldo en ${acc.max_open || 2} compras y guardo para la comisión. Si quieres elegir tú, cámbialo en Telegram: /monedas y /monto (o /monto auto para volver). Mínimo $5, nunca más que tu saldo. Máximo ${acc.max_open || 2} monedas a la vez.</span></div>
+      </div>` : ""}
       <div class="group">
         <a class="cell tap" href="${esc(acc.profile_url)}" target="_blank" rel="noopener"><span class="k">Tu perfil de FOMO</span><span class="v">@${esc(acc.fomo_handle)}</span><span class="chev">›</span></a>
         <button class="cell tap" id="invite" data-url="${esc(acc.signup_url)}"><span class="k">Invitar a un amigo</span><span class="chev">›</span></button>
@@ -399,7 +419,7 @@
     const e = c.exit;
     const tl = e ? Math.max(0, e.timeout_at - Date.now() / 1000) : 0;
     $("#coin-body").innerHTML = `
-      <div class="coin-head"><div class="coin-sub">${esc(sym)} · Solana${age ? " · " + age : ""}${c.shield ? `<span class="shield ${c.audit_passed ? "" : "bad"}">${c.shield}</span>` : ""}</div>
+      <div class="coin-head"><div class="coin-sub">${esc(sym)} · ${esc(c.chain || "Solana")}${age ? " · " + age : ""}${c.shield ? `<span class="shield ${c.audit_passed ? "" : "bad"}">${c.shield}</span>` : ""}</div>
       <div class="price-big">${price(c.price)}</div>
       ${c.since_entry_pct != null ? `<div class="${c.since_entry_pct >= 0 ? "up" : "down"}" style="font-size:17px;font-weight:500">${c.since_entry_pct >= 0 ? "▲" : "▼"} ${Math.abs(c.since_entry_pct).toFixed(2)}% desde la entrada</div>` : ""}</div>
       <div class="cchart"><canvas id="coin-chart"></canvas></div>
@@ -528,12 +548,14 @@
     if (t.id === "rerank-info") {
       const rep = (await get("/traders").catch(() => ({ report: null }))).report;
       sheet(`<div class="sh-t">¿Cómo elijo a los traders?</div><div style="color:var(--sec);font-size:14px;line-height:1.45">
-        1. Busco traders conocidos (con cuenta pública en X) en el ranking de 30 días de kolscan.io.<br>
-        2. Solo quedan los que ganan en 30 días y también esta semana, con 30 o más operaciones y que aciertan al menos 35%.<br>
-        3. Reviso sus compras reales en la blockchain de Solana: fuera bots, snipers, bundlers y los que venden en segundos.<br>
-        4. Si dos son iguales, gana el que tiene más seguidores. Me quedo con los 5 mejores y los reviso cada día.<br>
-        ${rep ? `<br>Última vez: ${rep.kols ?? rep.trades ?? 0} traders revisados · ${rep.studied} verificados · ${rep.chosen} elegidos.` : ""}
-        <br><br>FOMO no muestra su ranking sin iniciar sesión, por eso uso kolscan. No es dinero real hasta que tú toques Comprar en FOMO. Copiar traders también pierde.</div>`);
+        Solo copio criptos establecidas: Bitcoin, Ethereum, Solana y XRP. Nada de memecoins.<br><br>
+        1. Leo el ranking público de Hyperliquid, un exchange donde se ve todo lo que hace cada trader.<br>
+        2. Solo quedan los que ganan en 30 días y en todo su historial, que operaron esta semana y tienen una cuenta grande de verdad.<br>
+        3. Reviso sus operaciones reales: que la mayoría sea en BTC, ETH, SOL o XRP, que acierten al menos 40% de sus cierres y que no sean bots.<br>
+        4. Fuera los que apuestan con mucho apalancamiento o tuvieron caídas grandes este mes. Me quedo con los 5 mejores y los reviso cada día.<br><br>
+        Cuando uno compra BTC, ETH, SOL o XRP, te aviso con Comprar ($5). Cuando cierra, te aviso con Vender. Si apuesta a la baja, no hago nada: en FOMO solo se puede comprar.
+        ${rep ? `<br><br>Última vez: ${rep.leaderboard_rows ?? rep.kols ?? rep.trades ?? 0} traders en el ranking · ${rep.studied} revisados · ${rep.chosen} elegidos.` : ""}
+        <br><br>Con $5, la comisión es ~2% al comprar y ~2% al vender (XRP en Base ~0.5%), así que los movimientos chicos no dejan ganancia. Copiar traders también pierde.</div>`);
       return;
     }
     if (t.dataset.audit) return openAudit(t.dataset.audit);
@@ -583,7 +605,7 @@
     }
     if (t.id === "btn-bell") {
       const r = await get("/pushes").catch(() => ({ rows: [] }));
-      sheet(`<div class="sh-t">Avisos</div>${r.rows.length ? r.rows.map((p) => `<a class="row tap" href="${esc(p.url || "#")}" target="_blank" rel="noopener"><span class="mid"><div class="t" style="white-space:normal">${esc(p.text)}</div><div class="s">Grok Bot · ${hhmm(p.ts)}</div></span></a>`).join("") : `<div class="empty">Sin avisos todavía</div>`}`);
+      sheet(`<div class="sh-t">Avisos</div>${r.rows.length ? r.rows.map((p) => `<a class="row tap" href="${esc(p.url || "#")}" target="_blank" rel="noopener"><span class="mid"><div class="t" style="white-space:normal">${esc(p.text)}</div><div class="s">Grok Desk Trading · ${hhmm(p.ts)}</div></span></a>`).join("") : `<div class="empty">Sin avisos todavía</div>`}`);
       $("#bell-dot").hidden = true; return;
     }
     if (t.id === "activity-more") return loadActivity(true);

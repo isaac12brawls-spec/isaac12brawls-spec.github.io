@@ -310,3 +310,40 @@ details.adv summary::-webkit-details-marker{display:none}
 .trow .hd{color:var(--sec);font-weight:400;font-size:13px}
 .trow.tk .s{white-space:normal}
 .trow .why{color:var(--sec);font-size:12px;margin-top:4px;line-height:1.35;white-space:normal}
+
+/* v5: traders grouped by coin */
+.coin-h{display:flex;align-items:baseline;gap:6px;margin:16px 2px 6px;font-size:13px;color:var(--sec)}
+.coin-h b{color:var(--text);font-size:15px}
+.coin-h span{margin-left:auto;font-size:12px;color:var(--ter)}
+.tr-av.coin{width:auto;padding:0 7px;border-radius:13px;gap:3px;display:flex;font-size:10px}
+.tr-av.coin i{font-style:normal;color:var(--green)}
+
+/* v5: Grok helper (Home only). Sits above the tab bar, right corner; small so it never covers the action buttons. */
+#gb{position:fixed;right:12px;bottom:calc(var(--tabh) + 14px + env(safe-area-inset-bottom));z-index:15}
+.gb-btn{width:52px;height:52px;border-radius:50%;background:#1c1c1e;border:1px solid var(--sep);display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.gb-btn svg{width:40px;height:40px}
+.gb-btn .gb-body{animation:gb-bob 2.6s ease-in-out infinite;transform-origin:30px 50px}
+#gb.open .gb-btn{opacity:.55}
+@keyframes gb-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+.gb-panel{position:fixed;right:10px;left:10px;bottom:calc(var(--tabh) + 74px + env(safe-area-inset-bottom));max-width:420px;margin-left:auto;
+  max-height:min(60vh,460px);display:flex;flex-direction:column;background:#141416;border:1px solid var(--sep);border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);overflow:hidden}
+.gb-head{display:flex;align-items:center;gap:6px;padding:8px 6px 8px 12px;border-bottom:1px solid var(--sep);font-size:15px}
+.gb-mini svg{width:24px;height:24px;display:block}
+.gb-sub{color:var(--ter);font-size:11px}
+.gb-x{margin-left:auto;font-size:24px;color:var(--sec);width:44px;height:44px}
+.gb-log{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:90px}
+.gb-m{max-width:88%;padding:8px 11px;border-radius:14px;font-size:14px;line-height:1.38}
+.gb-m.bot{background:var(--card2);align-self:flex-start;border-bottom-left-radius:4px}
+.gb-m.me{background:#5e2c82;align-self:flex-end;border-bottom-right-radius:4px}
+.gb-tg{display:block;margin-top:8px;padding:9px 12px;border-radius:10px;background:var(--blue);color:#fff;text-align:center;font-weight:600;min-height:0}
+.gb-note{display:block;margin-top:6px;color:var(--sec);font-size:12px}
+.gb-chips{display:flex;gap:6px;overflow-x:auto;padding:6px 10px;scrollbar-width:none}
+.gb-chip{flex:none;padding:6px 11px;border-radius:15px;background:#1f1f22;border:1px solid var(--sep);font-size:13px;color:var(--text);min-height:32px}
+.gb-form{display:flex;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom)*0);border-top:1px solid var(--sep)}
+.gb-form input{flex:1;min-width:0;background:#1f1f22;border:1px solid var(--sep);border-radius:18px;color:var(--text);padding:8px 12px;font:inherit;font-size:16px}
+.gb-send{width:40px;min-width:40px;height:40px;min-height:40px;border-radius:50%;background:#bf5af2;color:#fff}
+@media (prefers-reduced-motion: reduce){.gb-btn .gb-body{animation:none}}
+#v-home .bottom-pad{height:calc(var(--tabh) + 96px + env(safe-area-inset-bottom))}
+.coin-pill{display:inline-block;margin-left:4px;padding:2px 7px;border-radius:9px;font-size:12px;background:#2c2c2e;color:var(--ter);text-decoration:line-through}
+.coin-pill.on{background:rgba(0,211,90,.16);color:var(--green);text-decoration:none}

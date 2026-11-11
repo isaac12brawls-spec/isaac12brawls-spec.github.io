@@ -1,6 +1,6 @@
 // Service worker: offline shell, web push, tap opens the links.py coin URL carried in the push payload.
-const SHELL = "desk-shell-v1";
-const FILES = ["/", "/app.css", "/app.js", "/chart.js", "/manifest.json", "/icons/icon-192.png"];
+const SHELL = "desk-shell-v2";
+const FILES = ["/", "/app.css", "/app.js", "/chart.js", "/assistant.js", "/manifest.json", "/icons/icon-192.png"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES).catch(() => {})).then(() => self.skipWaiting()));
 });
@@ -20,8 +20,8 @@ self.addEventListener("fetch", (e) => {
 });
 self.addEventListener("push", (e) => {
   let d = {};
-  try { d = e.data.json(); } catch (_) { d = { title: "Grok Bot · now", body: e.data ? e.data.text() : "" }; }
-  e.waitUntil(self.registration.showNotification(d.title || "Grok Bot · now", {
+  try { d = e.data.json(); } catch (_) { d = { title: "Grok Desk Trading", body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(d.title || "Grok Desk Trading", {
     body: d.body || "", icon: "/icons/icon-192.png", badge: "/icons/badge-96.png", data: { url: d.url },
   }));
 });
