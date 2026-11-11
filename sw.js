@@ -1,5 +1,5 @@
 // Service worker: offline shell, web push, tap opens the links.py coin URL carried in the push payload.
-const SHELL = "desk-shell-v6";
+const SHELL = "desk-shell-v7";
 const FILES = ["/", "/app.css", "/app.js", "/chart.js", "/office.js", "/assistant.js", "/manifest.json", "/icons/icon-192.png"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES).catch(() => {})).then(() => self.skipWaiting()));

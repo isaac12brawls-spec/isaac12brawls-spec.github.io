@@ -50,7 +50,7 @@
     // decorative candles on the wall screen (the real numbers live in the balance chart below)
     const c = [[6, 20, 26, 1], [12, 18, 24, 1], [18, 22, 27, 0], [24, 16, 23, 1], [30, 12, 19, 1], [36, 14, 20, 0], [42, 9, 16, 1], [48, 6, 12, 1], [54, 8, 13, 0], [60, 4, 10, 1]];
     return `<svg class="wall-chart" viewBox="0 0 66 32" preserveAspectRatio="none">${c.map(([x, a, b, up], i) =>
-      `<g class="cd" style="animation-delay:${i * 0.18}s"><path d="M${x} ${a - 2}V${b + 2}" stroke="${up ? "#00d35a" : "#ff453a"}" stroke-width=".7"/><rect x="${x - 1.6}" y="${a}" width="3.2" height="${b - a}" fill="${up ? "#00d35a" : "#ff453a"}"/></g>`).join("")}</svg>`;
+      `<g class="cd" style="animation-delay:${i * 0.18}s"><path d="M${x} ${a - 2}V${b + 2}" stroke="${up ? "#3dff88" : "#ff5a6a"}" stroke-width=".7"/><rect x="${x - 1.6}" y="${a}" width="3.2" height="${b - a}" fill="${up ? "#3dff88" : "#ff5a6a"}"/></g>`).join("")}</svg>`;
   }
   function build(el) {
     el.innerHTML = `<div class="floor-scene">

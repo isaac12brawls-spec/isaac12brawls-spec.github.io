@@ -456,3 +456,17 @@ details.adv summary::-webkit-details-marker{display:none}
 #v-home.dash .bottom-pad{height:calc(var(--tabh) + 24px + env(safe-area-inset-bottom))}
 #v-home .log-card,#v-home .stats-card,#v-home .desk-card{padding-right:14px}
 @media (prefers-reduced-motion: reduce){.dash-run i{animation:none}}
+
+/* v7: office characters back on Home, themed to the v6 desk, nothing else restyled */
+#v-home.dash .office{margin:8px -14px 6px}
+#v-home.dash .floor-scene{background:#0a100e;padding:8px 10px 10px}
+#v-home.dash .floor-scene::before{top:110px;background:#101614;
+  background-image:linear-gradient(rgba(61,255,136,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(61,255,136,.04) 1px,transparent 1px)}
+#v-home.dash .wall-screen{background:#070b0a;border-color:#1c2822}
+#v-home.dash .desk-slot .nm{color:#8a9a93}
+#v-home.dash .tr-av{background:#141a17;border-color:#3dff88}
+#v-home.dash .tr-lbl{color:#8a9a93}
+#v-home.dash .tr-av.coin{color:#d8ffe8}
+#v-home.dash .bubble{background:#e8fff0}
+#v-home.dash .desk-slot[data-st=alert] .bubble{background:#ffe1df}
+#v-home.dash .desk-slot[data-st=win] .bubble{background:#d8f8e4}
