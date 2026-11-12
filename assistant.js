@@ -8,7 +8,7 @@
   const big = (v) => { v = v || 0; const a = Math.abs(v); return (v < 0 ? "-" : "") + (a >= 1e6 ? `$${(a / 1e6).toFixed(1)} millones` : a >= 1e3 ? `$${Math.round(a / 1e3)} mil` : `$${Math.round(a)}`); };
   const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const COINS = { BTC: ["btc", "bitcoin"], ETH: ["eth", "ethereum", "ether"], SOL: ["sol", "solana"], XRP: ["xrp", "ripple", "xpr"] };
-  const CHIPS = ["Sigue solo XRP", "Pon $7 por compra", "¿Cómo voy?", "¿Por qué compró?", "¿Quiénes son mis traders?", "¿Qué hace Comprar?", "¿Qué es modo práctica?", "Comisiones"];
+  const CHIPS = ["¿Cómo voy?", "¿Por qué no compra?", "¿Qué monedas miras?", "¿Qué hace Comprar?", "Comisiones", "¿Sigues traders?"];
   const st = () => (window.DeskApp && window.DeskApp.state()) || null;
 
   function coinIn(q) { return Object.keys(COINS).find((c) => COINS[c].some((w) => new RegExp(`\\b${w}\\b`).test(q))); }
@@ -55,6 +55,20 @@
       return t;
     }
     const f = a.focus;
+    const rv = (s && s.research);
+    if (rv) {
+      const sy = rv.symbol || rv.name || "el radar";
+      const tks = "$" + (a.ticket || 4).toFixed(2);
+      if (has("que moneda", "cual moneda", "meme", "radar", "moneda")) {
+        const w = (rv.watch || []).map((x) => x.symbol).filter(Boolean);
+        return w.length ? `Estoy vigilando ${w.join(", ")}. No copio traders: investigo yo. Una compra solo sale si una regla demostró ventaja después de las comisiones (~4% ida y vuelta en FOMO).` : "Todavía estoy armando el radar de monedas.";
+      }
+      if (has("trader", "quienes", "a quien copio", "copias")) return "Ya no copio traders. Investigo yo el gráfico y la seguridad. En el estudio del 12 nov, ninguna regla de compra ganó después de comisiones, así que no invento un Comprar.";
+      if (has("comprar")) return `Si alguna vez hay una señal que sí esté validada, te llega ¡Compra ya! con ${tks} y el botón en el escritorio abre FOMO. Tú lo tocas. Hoy no hay una regla de compra que haya aguantado el backtest.`;
+      if (has("vender", "venta")) return "Si tienes una posición, te aviso Vender si toca el stop (−20%), el trailing, se va la liquidez o falla la seguridad. Tú vendes el 100% en FOMO.";
+      if (has("presupuesto", "cuanto pongo", "monto")) return `Cada Comprar te pediría ${tks} fijos, nunca más que tu saldo ($${(a.stack || 0).toFixed(2)}).`;
+      if (has("por que", "porque", "aviso", "senal", "señal")) return rv.why || "Sin aviso de compra: las reglas de gráfico no demostraron ventaja neta después del 4% de comisión.";
+    }
     if (f) {   // v10: one memecoin + its top traders
       const sy = f.symbol || f.name;
       if (has("que moneda", "cual moneda", "meme", "pump", "mihao", "moneda")) {

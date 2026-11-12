@@ -200,9 +200,10 @@
     $("#paper-coin").hidden = !paper;
     const pnl = d.today_pnl != null ? d.today_pnl : (st.balance - st.start_value);
     const t = $("#today");
-    if (st.focus) {
+    if (st.research || st.focus) {
       const tp = d.today_pct || 0;
-      t.textContent = pnl ? (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(tp) + ") desde que opero " + (st.focus.symbol || st.focus.name) : "Sin ganancias ni pérdidas aún";
+      const spot = st.research || st.focus;
+      t.textContent = pnl ? (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(tp) + ") desde que opero " + (spot.symbol || spot.name) : "Sin ganancias ni pérdidas aún";
       t.className = "num " + (pnl > 0 ? "up" : pnl < 0 ? "down" : "flat");
     } else { t.textContent = (pnl >= 0 ? "+" : "") + usd(pnl) + " (" + pct(st.today_pct) + ")"; t.className = "num " + (st.today_pct >= 0 ? "up" : "down"); }
     $("#mult").textContent = (d.multiplier != null ? d.multiplier : st.multiplier).toFixed(2) + "×";
@@ -210,7 +211,7 @@
     const when = d.night_label || "08:00";
     const auto = d.auto ? " · Automático" : "";
     const eq = $("#eq-label");
-    if (eq) eq.textContent = st.focus ? `Tu presupuesto · ${money0(d.ticket)} por compra` : `Equity · ${startLbl} a las ${when}${auto}`;
+    if (eq) eq.textContent = (st.research || st.focus) ? `Tu presupuesto · ${money0(d.ticket)} por compra` : `Equity · ${startLbl} a las ${when}${auto}`;
     const wl = $("#wl"); if (wl) wl.textContent = `${d.wins || 0}W / ${d.losses || 0}L`;
     const rk = $("#open-risk");
     if (rk) {
@@ -226,8 +227,8 @@
     renderPush(); resyncPush();
     renderTicker(d);
     renderFocus(st);
-    $("#ticker").hidden = !!st.focus;
-    $("#action").hidden = !!st.focus;
+    $("#ticker").hidden = !!st.focus && !st.research;
+    $("#action").hidden = !!(st.focus || st.research);
     renderDeskCard(d);
     renderLogger(d);
     renderStats(d);
@@ -246,11 +247,13 @@
   function trName(r) { const n = r.name || r.label || ""; return !n || /^Trader \d+$/.test(n) ? (r.short || (r.wallet || "").slice(0, 4) + "…") : n.length > 13 ? n.slice(0, 12) + "…" : n; }
   function renderFocus(st) {
     const el = $("#focus-card"); if (!el) return;
-    const f = st.focus;
+    const f = st.research || st.focus;
     const sub = $("#dash-sub");
     document.body.classList.toggle("fx", !!f);
     if (!f) { el.innerHTML = ""; if (sub) sub.textContent = "copiando a los mejores traders · práctica → real"; return; }
-    if (sub) sub.textContent = `Solo ${f.symbol || f.name} · copiando a sus mejores traders`;
+    if (st.research) { if (sub) sub.textContent = "Investigo yo las monedas · te aviso si hay una señal clara"; }
+    else { if (sub) sub.textContent = `Solo ${f.symbol || f.name} · copiando a sus mejores traders`; }
+    if (st.research) return renderResearch(st, f, el);
     const ch = (f.safety && f.safety.checks) || [];
     const okN = ch.filter((c) => c.ok).length;
     const safe = !ch.length ? `<b class="wait">revisando…</b>` : f.safety.ok ? `<b class="ok">${okN}/${ch.length} ✓</b>` : `<b class="bad">⚠ ${esc(f.safety.reason || "no segura")}</b>`;
@@ -288,7 +291,42 @@
     </div>`;
     if (el._h !== h) { el.innerHTML = h; el._h = h; }
   }
+  function renderResearch(st, f, el) {
+    const ch = (f.safety && f.safety.checks) || [];
+    const okN = ch.filter((c) => c.ok).length;
+    const safe = !ch.length ? `<b class="wait">revisando…</b>` : f.safety.ok ? `<b class="ok">${okN}/${ch.length} ✓</b>` : `<b class="bad">⚠ ${esc(f.safety.reason || "no segura")}</b>`;
+    const chg = f.chg24 == null ? "" : `<span class="fc-ch ${f.chg24 >= 0 ? "up" : "down"}">${f.chg24 >= 0 ? "+" : ""}${Math.round(f.chg24).toLocaleString("es")}% 24h</span>`;
+    const a = st.action;
+    const facts = (f.factors || []).map((x) => `<span class="fc-chip ${x.ok ? "in" : ""}" title="${esc(x.value || "")}"><i></i>${esc(x.name)}</span>`).join("");
+    let actH;
+    if (a && (a.kind === "buy" || a.kind === "sell")) {
+      const sym = esc(f.symbol || f.name);
+      actH = `<div class="fc-alert ${a.kind}">
+        <div class="fc-at">${a.kind === "buy" ? `¡Compra ya! ${sym} · pon ${money0(a.size != null ? a.size : f.ticket)}` : `¡Vende ya! ${sym}`}</div>
+        ${a.sub ? `<div class="fc-as">${esc(a.sub)}</div>` : ""}
+        <a class="fc-btn ${a.kind} tap" id="fc-btn" href="${esc(a.url)}" target="_blank" rel="noopener">${a.kind === "buy" ? `Comprar ${money0(a.size != null ? a.size : f.ticket)} en FOMO` : "Vender 100% en FOMO"}</a>
+        ${a.demo ? `<div class="fc-demo">EJEMPLO · datos de prueba</div>` : ""}</div>`;
+    } else {
+      actH = `<div class="fc-calm"><span class="fc-dot"></span><span>${esc(f.why || "Sin aviso ahora. No invento una compra: las reglas de gráfico todavía no demostraron ventaja después de las comisiones de FOMO (~4% ida y vuelta).")}</span></div>
+        ${f.url ? `<a class="fc-link tap" href="${esc(f.url)}" target="_blank" rel="noopener">Ver ${esc(f.symbol || f.name)} en FOMO ›</a>` : ""}`;
+    }
+    const regime = f.regime ? `<b>${esc(f.regime)}</b>` : "…";
+    const h = `<div class="focus-card ${a ? "hot" : ""}">
+      <div class="fc-top"><span class="fc-av">${esc((f.symbol || "?")[0])}</span>
+        <span class="fc-nm"><b>${esc(f.name || "Radar")}</b> <span class="fc-tk">${esc(f.symbol || "")}</span></span>${chg}</div>
+      <div class="fc-grid">
+        <div><span>Precio</span><b>${tprice(f.price, f.symbol)}</b></div>
+        <div><span>Capitalización</span><b>${big$(f.mcap)}</b></div>
+        <div><span>Seguridad</span>${safe}</div>
+        <div><span>Régimen</span>${regime}</div>
+      </div>
+      ${facts ? `<div class="fc-chips">${facts}<span class="fc-leg">verde = factor a favor</span></div>` : ""}
+      ${actH}
+    </div>`;
+    if (el._h !== h) { el.innerHTML = h; el._h = h; }
+  }
   function renderTicker(d) {
+
     const el = $("#ticker"); if (!el) return;
     const rows = (d && d.tickers) || [];
     if (!rows.length) { el.innerHTML = `<div class="tick empty"><span class="tn">${S.state && S.state.focus ? esc(S.state.focus.symbol || "") : "BTC · ETH · SOL · XRP"}</span><span class="tp">esperando precios…</span></div>`; return; }
@@ -313,7 +351,7 @@
     const scanned = (d && d.scanned) || 0, traded = (d && d.traded) || 0, n = rows.length || 6;
     const sc = scanned >= 1000 ? (scanned / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(scanned);
     const fo = S.state && S.state.focus;
-    el.innerHTML = `<div class="desk-h">Desk · ${n} agentes<span class="r">${fo ? `${scanned} movimientos · ${traded} avisos Comprar` : `${sc} revisados · ${traded} copias`}</span></div>` +
+    el.innerHTML = `<div class="desk-h">Desk · ${n} agentes<span class="r">${(S.state && S.state.research) ? `${scanned} pases · ${traded} avisos Comprar` : fo ? `${scanned} movimientos · ${traded} avisos Comprar` : `${sc} revisados · ${traded} copias`}</span></div>` +
       (rows.length ? rows.map((a) => `<div class="arow" data-agent="${esc(a.id)}">
         <span class="aico ${esc(a.id)}">${AICO[a.id] || ""}</span>
         <span><div class="anm">${esc(a.name)}</div><div class="asub">${esc(a.sub || "")}</div></span>
@@ -356,7 +394,7 @@
     if (!a) {
       const n = (st.traders || []).filter((r) => !r.paused).length;
       const r = st.agents.scanner.ranking;
-      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `Yo manejo tu presupuesto. Tú solo tocas el botón. ${st.focus ? `Te aviso cuando la mayoría de tus ${st.focus.team || n} traders top de ${esc(st.focus.symbol || st.focus.name)} compre o venda.` : `Te aviso cuando uno de tus ${n} traders compre o venda.`}` : "No tienes que hacer nada por ahora."}</span></div>`;
+      h = `<div class="act-card calm"><span class="ok">✓</span><span class="as">${st.research ? "Yo investigo las monedas. Tú solo tocas Comprar o Vender en FOMO si te llega un aviso. Si no hay aviso, no invento la operación." : r ? "Estoy eligiendo a los mejores traders. Tarda unos minutos." : n ? `Yo manejo tu presupuesto. Tú solo tocas el botón. ${st.focus ? `Te aviso cuando la mayoría de tus ${st.focus.team || n} traders top de ${esc(st.focus.symbol || st.focus.name)} compre o venda.` : `Te aviso cuando uno de tus ${n} traders compre o venda.`}` : "No tienes que hacer nada por ahora."}</span></div>`;
     } else {
       const btn = a.kind === "parar"
         ? `<button class="ab parar tap" data-cb="${esc(a.callback)}">Parar</button>`
@@ -367,6 +405,33 @@
   }
 
   function renderTraders(st) {
+    const title = document.querySelector("#v-traders .big-title");
+    const lead = document.querySelector("#v-traders .tlead");
+    const tab = document.querySelector('.tab[data-tab="traders"] span');
+    if (st.research) {
+      if (title) title.textContent = "Radar";
+      if (lead) lead.textContent = "Investigo estas monedas con gráfico y chequeos de seguridad. Una compra solo sale si una regla demostró ventaja después de comisiones.";
+      if (tab) tab.textContent = "Radar";
+      const watch = (st.research.watch || []);
+      if (!watch.length) {
+        $("#traders").innerHTML = `<div class="empty" style="padding:18px 14px;text-align:left">Todavía estoy armando el radar…</div>`;
+        $("#traders-note").textContent = "";
+        return;
+      }
+      $("#traders").innerHTML = watch.map((r) => {
+        const chg = r.chg24 == null ? "" : `<span class="${r.chg24>=0?"up":"down"}">${r.chg24>=0?"+":""}${Math.round(r.chg24)}%</span>`;
+        return `<a class="trow" href="${esc(r.url||"#")}" target="_blank" rel="noopener">
+          <span class="av">${esc((r.symbol||"?")[0])}</span>
+          <span><div class="tnm">${esc(r.name||r.symbol||"")}</div><div class="tsub">${esc(r.kind||"")} · ${esc(r.regime||"—")} · ${esc(r.why||"")}</div></span>
+          <span class="tright">${chg}<div class="tsub">puntaje ${r.score != null ? r.score : "—"}</div></span>
+        </a>`;
+      }).join("");
+      $("#traders-note").textContent = (st.research.shipped||[]).length ? "Reglas en uso: " + st.research.shipped.join(", ") : "Ninguna regla de compra validada en el backtest (después del 4% de comisión FOMO).";
+      return;
+    }
+    if (title) title.textContent = "Traders";
+    if (lead) lead.textContent = "Copio a los mejores de cada moneda. Si uno no te gusta, apágalo.";
+    if (tab) tab.textContent = "Traders";
     const rows = st.traders || [];
     const sc = st.agents.scanner;
     if (!rows.length) {
@@ -865,7 +930,7 @@
       let sub = await reg.pushManager.getSubscription();
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
       await registerSub(sub);
-      reg.showNotification("Avisos activados", { body: "Te aviso solo cuando la mayoría de los traders compre o venda.", icon: "/icons/icon-192.png", badge: "/icons/badge-96.png", tag: "desk-push-on" }).catch(() => {});
+      reg.showNotification("Avisos activados", { body: "Te aviso solo cuando haya un ¡Compra ya! o ¡Vende ya! claro.", icon: "/icons/icon-192.png", badge: "/icons/badge-96.png", tag: "desk-push-on" }).catch(() => {});
       toast("Avisos activados ✓");
     } catch (err) { toast(err.message || "No se pudieron activar los avisos"); }
     finally { pushBusy = false; renderPush(); }

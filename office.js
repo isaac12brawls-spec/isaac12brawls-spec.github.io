@@ -83,7 +83,7 @@
       const byCoin = tr.some((t) => (t.chosen_for || []).length);
       const fx = tr.some((t) => t.data_src === "focus");
       const act = tr.filter((t) => !t.paused && (t.bench || "active") === "active");
-      const h = fx ? "" // v11: the trader names live in the status card above (no unlabeled numbered circles)
+      const h = (fx || (document.body.classList.contains("fx") && !tr.length)) ? "" // research/focus: names live in the status card
         : byCoin ? ["BTC", "ETH", "SOL", "XRP"].map((c) => `<span class="tr-av coin" title="${c}"><b>${c}</b><i>${tr.filter((t) => !t.paused && (t.chosen_for || []).includes(c)).length}</i></span>`).join("") + `<span class="tr-lbl">${tr.filter((t) => !t.paused).length} traders</span>`
         : tr.length ? tr.map((t) => `<span class="tr-av ${t.paused ? "off" : ""}" title="${esc(t.label)}"><b>${t.rank}</b></span>`).join("") + `<span class="tr-lbl">copiando a ${tr.filter((t) => !t.paused).length} traders</span>`
         : `<span class="tr-lbl">eligiendo traders…</span>`;
