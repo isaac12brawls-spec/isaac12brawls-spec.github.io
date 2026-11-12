@@ -251,7 +251,7 @@
     const sub = $("#dash-sub");
     document.body.classList.toggle("fx", !!f);
     if (!f) { el.innerHTML = ""; if (sub) sub.textContent = "copiando a los mejores traders · práctica → real"; return; }
-    if (st.research) { if (sub) sub.textContent = "Investigo yo las monedas · te aviso si hay una señal clara"; }
+    if (st.research) { if (sub) sub.textContent = f.exp ? `${f.symbol || "mihao"} · te digo cuándo comprar y vender` : "Investigo yo las monedas · te aviso si hay una señal clara"; }
     else { if (sub) sub.textContent = `Solo ${f.symbol || f.name} · copiando a sus mejores traders`; }
     if (st.research) return renderResearch(st, f, el);
     const ch = (f.safety && f.safety.checks) || [];
@@ -481,7 +481,7 @@
   function renderChart() {
     const c = S.chart, st = S.state; if (!c || !st) return;
     const empty = !st.has_trades;
-    const ce = $("#chart-empty"); if (ce) { ce.hidden = !empty || !!st.focus; ce.style.top = ""; }
+    const ce = $("#chart-empty"); if (ce) { ce.hidden = !empty || !!st.focus; ce.style.top = ""; if (st.research) ce.textContent = "esperando la primera compra"; }
     const pts = (c.points && c.points.length) ? c.points : [];
     if (window.DeskChart && DeskChart.equity) DeskChart.equity($("#home-chart"), { points: pts, start_value: c.start_value });
     else DeskChart.line($("#home-chart"), { points: pts, marks: [], start_value: c.start_value });
