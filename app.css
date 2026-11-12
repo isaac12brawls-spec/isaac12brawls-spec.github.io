@@ -529,3 +529,36 @@ body.fx #v-home .floor-scene{padding-top:4px}
 .fc-demo{font-size:11px;font-weight:800;letter-spacing:.06em;color:#ffd60a;text-align:center}
 #today.flat{color:#9aaba4}
 .fc-leg{font-size:10.5px;color:#6f817a;align-self:center;margin-left:2px}
+
+/* v13 · mihao status card (ESPERAR / COMPRAR / MANTENER / VENDER) + tidy home */
+.focus-card.sc .sc-px{font-size:17px;font-weight:700;color:#e9f5ef;font-variant-numeric:tabular-nums;flex:none}
+.sc-chgs{display:flex;gap:6px;margin-top:8px}
+.sc-chg{font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;background:#0f1c17;color:#9aaba4}
+.sc-chg.up{background:rgba(61,255,136,.12);color:#3dff88}.sc-chg.down{background:rgba(255,90,106,.12);color:#ff5a6a}
+.sc-status{margin-top:12px;border-radius:14px;padding:14px;background:#0f1c17;border:1px solid rgba(255,255,255,.06)}
+.sc-big{font-family:var(--disp);font-size:30px;font-weight:800;letter-spacing:.5px;line-height:1.05}
+.sc-why{margin-top:6px;font-size:14px;line-height:1.4;color:#d6e2dd}
+.sc-status.wait .sc-big{color:#ffd60a}.sc-status.wait{border-color:rgba(255,214,10,.25)}
+.sc-status.buy .sc-big{color:#3dff88}.sc-status.buy{border-color:rgba(61,255,136,.55);background:rgba(61,255,136,.08)}
+.sc-status.hold .sc-big{color:#64d2ff}.sc-status.hold{border-color:rgba(100,210,255,.35)}
+.sc-status.sell .sc-big{color:#ff5a6a}.sc-status.sell{border-color:rgba(255,90,106,.6);background:rgba(255,90,106,.08)}
+.focus-card.sc.sell{border-color:rgba(255,90,106,.6);box-shadow:0 0 22px rgba(255,90,106,.18)}
+.sc-btn{display:flex;align-items:center;justify-content:center;margin-top:10px;min-height:50px;border-radius:14px;font-size:16px;font-weight:800;text-decoration:none}
+.sc-btn.buy{background:#3dff88;color:#04140c}.sc-btn.sell{background:#ff5a6a;color:#1a0306}
+.sc-btn.ghost{background:transparent;color:#3dff88;border:1px solid rgba(61,255,136,.35);font-size:14.5px;min-height:44px}
+.sc-tag{margin-top:10px;font-size:12px;font-weight:700;color:#ff9f0a;background:rgba(255,159,10,.1);border:1px solid rgba(255,159,10,.3);border-radius:10px;padding:6px 10px}
+.sc-conds{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.sc-ch{font-size:12px;color:#9aaba4;margin-bottom:2px}
+.sc-c{display:grid;grid-template-columns:18px 1fr;column-gap:6px;font-size:12.5px;color:#9aaba4;align-items:start}
+.sc-c i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#1a2622;color:#7f918a;font-size:11px;font-weight:800}
+.sc-c.ok{color:#d8ffe8}.sc-c.ok i{background:#3dff88;color:#04140c}
+.sc-c em{grid-column:2;font-style:normal;font-size:11px;color:#6d7d77;overflow-wrap:anywhere}
+.sc-rules{margin-top:10px;font-size:12px;line-height:1.4;color:#9aaba4;border-top:1px solid rgba(255,255,255,.06);padding-top:9px}
+.sc-rules b{color:#e9f5ef}
+.more-box{margin:12px 0 4px;border-radius:16px;background:#0b1511;border:1px solid rgba(255,255,255,.07)}
+.more-box>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:14.5px;font-weight:700;color:#d6e2dd;cursor:pointer}
+.more-box>summary::-webkit-details-marker{display:none}
+.more-box>summary .chev{transition:transform .2s;color:#7f918a}
+.more-box[open]>summary .chev{transform:rotate(90deg)}
+.more-box[open]{padding-bottom:6px}
+.more-box>.desk-card,.more-box>.log-card,.more-box>.stats-card{margin-left:8px;margin-right:8px}

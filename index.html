@@ -46,6 +46,9 @@
     </div>
     <div class="ticker" id="ticker"></div>
     <div id="focus-card"></div>
+    <div id="halt-slot"></div>
+    <div id="push-slot"></div>
+    <div id="action" class="action"></div>
     <div class="office" id="office"></div>
     <div class="equity">
       <div class="eq-top">
@@ -64,15 +67,15 @@
         <canvas id="home-chart"></canvas>
       </div>
     </div>
-    <div id="halt-slot"></div>
-    <div id="push-slot"></div>
-    <div id="action" class="action"></div>
-    <div class="desk-card" id="desk-card"></div>
-    <div class="log-card">
-      <div class="log-h">Logger <span id="log-count"></span></div>
-      <div id="logger" class="logger"><div class="empty log-empty">Esperando actividad…</div></div>
-    </div>
-    <div class="stats-card" id="desk-stats"></div>
+    <details class="more-box" id="more-box">
+      <summary class="tap">Cómo trabaja el escritorio <span class="chev">›</span></summary>
+      <div class="desk-card" id="desk-card"></div>
+      <div class="log-card">
+        <div class="log-h">Logger <span id="log-count"></span></div>
+        <div id="logger" class="logger"><div class="empty log-empty">Esperando actividad…</div></div>
+      </div>
+      <div class="stats-card" id="desk-stats"></div>
+    </details>
     <div id="details" hidden>
       <div class="carousel" id="carousel"></div>
       <div class="list" id="home-activity"></div>

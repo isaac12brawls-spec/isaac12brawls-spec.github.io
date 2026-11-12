@@ -227,7 +227,7 @@
     renderPush(); resyncPush();
     renderTicker(d);
     renderFocus(st);
-    $("#ticker").hidden = !!st.focus && !st.research;
+    $("#ticker").hidden = !!st.focus || !!st.research;   // v13: radar lives in its own tab
     $("#action").hidden = !!(st.focus || st.research);
     renderDeskCard(d);
     renderLogger(d);
@@ -292,36 +292,29 @@
     if (el._h !== h) { el.innerHTML = h; el._h = h; }
   }
   function renderResearch(st, f, el) {
-    const ch = (f.safety && f.safety.checks) || [];
-    const okN = ch.filter((c) => c.ok).length;
-    const safe = !ch.length ? `<b class="wait">revisando…</b>` : f.safety.ok ? `<b class="ok">${okN}/${ch.length} ✓</b>` : `<b class="bad">⚠ ${esc(f.safety.reason || "no segura")}</b>`;
-    const chg = f.chg24 == null ? "" : `<span class="fc-ch ${f.chg24 >= 0 ? "up" : "down"}">${f.chg24 >= 0 ? "+" : ""}${Math.round(f.chg24).toLocaleString("es")}% 24h</span>`;
-    const a = st.action;
-    const facts = (f.factors || []).map((x) => `<span class="fc-chip ${x.ok ? "in" : ""}" title="${esc(x.value || "")}"><i></i>${esc(x.name)}</span>`).join("");
-    let actH;
-    if (a && (a.kind === "buy" || a.kind === "sell")) {
-      const sym = esc(f.symbol || f.name);
-      actH = `<div class="fc-alert ${a.kind}">
-        <div class="fc-at">${a.kind === "buy" ? `¡Compra ya! ${sym} · pon ${money0(a.size != null ? a.size : f.ticket)}` : `¡Vende ya! ${sym}`}</div>
-        ${a.sub ? `<div class="fc-as">${esc(a.sub)}</div>` : ""}
-        <a class="fc-btn ${a.kind} tap" id="fc-btn" href="${esc(a.url)}" target="_blank" rel="noopener">${a.kind === "buy" ? `Comprar ${money0(a.size != null ? a.size : f.ticket)} en FOMO` : "Vender 100% en FOMO"}</a>
-        ${a.demo ? `<div class="fc-demo">EJEMPLO · datos de prueba</div>` : ""}</div>`;
-    } else {
-      actH = `<div class="fc-calm"><span class="fc-dot"></span><span>${esc(f.why || "Sin aviso ahora. No invento una compra: las reglas de gráfico todavía no demostraron ventaja después de las comisiones de FOMO (~4% ida y vuelta).")}</span></div>
-        ${f.url ? `<a class="fc-link tap" href="${esc(f.url)}" target="_blank" rel="noopener">Ver ${esc(f.symbol || f.name)} en FOMO ›</a>` : ""}`;
-    }
-    const regime = f.regime ? `<b>${esc(f.regime)}</b>` : "…";
-    const h = `<div class="focus-card ${a ? "hot" : ""}">
+    // v13: ONE clear status for mihao (ESPERAR / COMPRAR / TENGO / VENDER), reason in plain Spanish, one FOMO button.
+    const card = f.card || { status: "ESPERAR", title: "Espera · no compres todavía", why: f.why, btn: "Ver en FOMO", url: f.url };
+    const exp = f.exp || null;
+    const sym = esc(f.symbol || f.name || "mihao");
+    const chp = (v, lbl) => v == null ? `<span class="sc-chg">— ${lbl}</span>` : `<span class="sc-chg ${v >= 0 ? "up" : "down"}">${v >= 0 ? "+" : ""}${Math.abs(v) >= 100 ? Math.round(v).toLocaleString("es") : v.toFixed(1)}% ${lbl}</span>`;
+    const stc = { ESPERAR: "wait", COMPRAR: "buy", TENGO: "hold", VENDER: "sell" }[card.status] || "wait";
+    const big = { ESPERAR: "ESPERAR", COMPRAR: `COMPRAR ${money0(card.size != null ? card.size : f.ticket)}`, TENGO: "MANTENER", VENDER: "VENDER" }[card.status] || card.status;
+    const btnCls = card.status === "COMPRAR" ? "buy" : card.status === "VENDER" ? "sell" : "ghost";
+    const btn = card.url ? `<a class="sc-btn ${btnCls} tap" ${card.status === "COMPRAR" || card.status === "VENDER" ? 'id="fc-btn"' : ""} href="${esc(card.url)}" target="_blank" rel="noopener">${card.status === "ESPERAR" || card.status === "TENGO" ? `Ver ${sym} en FOMO ›` : esc(card.btn || "Ver en FOMO")}</a>` : "";
+    const conds = exp && exp.conds && exp.conds.length && card.status === "ESPERAR"
+      ? `<div class="sc-conds"><div class="sc-ch">Para decirte <b>¡Compra ya!</b> necesito las ${exp.conds.length}:</div>${exp.conds.map((c) => `<div class="sc-c ${c.ok ? "ok" : ""}"><i>${c.ok ? "✓" : "·"}</i><span>${esc(c.name)}</span><em>${esc(c.value || "")}</em></div>`).join("")}</div>` : "";
+    const sellRules = `<div class="sc-rules">Vender: te aviso <b>¡Vende ya!</b> si cae <b>-20%</b>, o si sube <b>+30%</b> y luego baja <b>15%</b> desde el pico.</div>`;
+    const tag = exp ? `<div class="sc-tag">⚠ ${esc(exp.label || "Experimental · no pasó la prueba")}</div>` : "";
+    const h = `<div class="focus-card sc ${stc} ${card.status !== "ESPERAR" ? "hot" : ""}">
       <div class="fc-top"><span class="fc-av">${esc((f.symbol || "?")[0])}</span>
-        <span class="fc-nm"><b>${esc(f.name || "Radar")}</b> <span class="fc-tk">${esc(f.symbol || "")}</span></span>${chg}</div>
-      <div class="fc-grid">
-        <div><span>Precio</span><b>${tprice(f.price, f.symbol)}</b></div>
-        <div><span>Capitalización</span><b>${big$(f.mcap)}</b></div>
-        <div><span>Seguridad</span>${safe}</div>
-        <div><span>Régimen</span>${regime}</div>
-      </div>
-      ${facts ? `<div class="fc-chips">${facts}<span class="fc-leg">verde = factor a favor</span></div>` : ""}
-      ${actH}
+        <span class="fc-nm"><b>${esc(f.name || "Radar")}</b> <span class="fc-tk">${sym}</span></span>
+        <span class="sc-px">${tprice(f.price, f.symbol)}</span></div>
+      <div class="sc-chgs">${chp(f.chg1, "1h")}${chp(f.chg24, "24h")}</div>
+      <div class="sc-status ${stc}"><div class="sc-big">${esc(big)}</div><div class="sc-why">${esc(card.why || "Estoy leyendo el gráfico…")}</div></div>
+      ${btn}
+      ${tag}
+      ${conds}
+      ${sellRules}
     </div>`;
     if (el._h !== h) { el.innerHTML = h; el._h = h; }
   }
